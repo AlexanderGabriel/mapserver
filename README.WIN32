@@ -53,7 +53,7 @@ used by theMapScript modules.
 
 To compile the various versions of MapScript (Perl, PHP, etc) first compile
 the main mapserver directory and then see the README files in the 
-mapscript/perl, mapscript/php3 or mapscript/python directory for specific 
+mapscript/perl, mapscript/php or mapscript/python directory for specific 
 instructions.
 
 
