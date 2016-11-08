@@ -1,3 +1,17 @@
+This repository is some kind of staging for patches for the original mapserver-project.
+
+Main goal is to make Building Mapserver with PHP-MapScript on Windows easier by:
+- Patch cmake-files and mapserver-source to compile with Visual Studio 2012 Express (vc11)
+- Supply patches to enable building against php-sdk for php-5.6 x86
+- Update Windows documentation to use cmake build-system, php-sdk and gisinternals-sdk
+
+Optional targets:
+- Support x64 PHP with VS2012 Express
+- Support VS2015 Express for both, x86 and x64-Builds
+
+
+Original README:
+
 -------
 Summary
 -------
