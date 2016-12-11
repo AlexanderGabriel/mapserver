@@ -39,10 +39,10 @@ Windows with CMake and the GISInternals-Packages for the following reasons:
   - not everybody wants to buy Visual Studio and there is no reason to force
     you to buy it just tu build Mapserver on Windows
   - CMake is the configuration-system for Linux. Why should you use something
-    else which needs to be maintainerd?
+    else which needs to be maintained?
   - as of today, PHP-Mapscript is not suppored for PHP-7. PHP-5.6 is build
     with VC11. To make PHP-Mapscript compatible with the downloadable
-    PHP-Version you need to build with VC11 wich is Visual Studio 2012.
+    PHP-Version you need to build with VC11 which is Visual Studio 2012.
   - GISInternals Downloads contain most dependencies. it's way easier
 
 If you want to compile Mapserver with any other version of Visual Studio you
