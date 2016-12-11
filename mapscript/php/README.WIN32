@@ -30,7 +30,7 @@ If not, open VS2012 x86 Native Tools Shell, add cmake to your PATH (see ../../RE
 
 
 --------------------------------------------------------------------
-Step 3: Install PHP3_MAPSCRIPT.DLL/PHP_MAPSCRIPT.DLL
+Step 3: Install PHP_MAPSCRIPT.DLL
 --------------------------------------------------------------------
 
 PHP_MAPSCRIPT.DLL is a regular PHP module, you should copy it to the same
