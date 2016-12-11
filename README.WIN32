@@ -67,9 +67,9 @@ Tools Command Prompt by entering:
 
 For our first build, we will use stable releases to build mapserver.
 Download MSVC 2012 win32 Packages for GDAL-2.1.2 and Mapserver-7.0.2 from http://gisinternals.com/release.php.
-We need "Compiled binaries in a single .zip package", "GDAL and MapServer sources" and "Compiled libraries and headers".
+We need "GDAL and MapServer sources" and "Compiled libraries and headers".
 Download the MSVC 2012 win32 Developement Kit from http://gisinternals.com/sdk.php.
-Extract everything to C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2.
+Extract everything to C:\dev\work\gisinternals.
 There should be the directories inside now: bin, doc, gdal, include, lib, regex-0.12, relase-1700, ...
 After you got this done, feel free to use other packages which fit your needs better.
 
@@ -94,14 +94,14 @@ correctly).
   cd C:\dev\work\mapserver\build
 4. Configure:
   cmake .. -G "NMake Makefiles" -DBUILD_SHARED_LIBS=1 -DCMAKE_BUILD_TYPE=Release -Wno-dev
-  cmake .. -DCMAKE_PREFIX_PATH=C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2;C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\bin;C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\lib;C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\include
-  cmake .. -DREGEX_DIR=C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\regex-0.12
+  cmake .. -DCMAKE_PREFIX_PATH=C:\dev\work\gisinternals;C:\dev\work\gisinternals\lib;C:\dev\work\gisinternals\include
+  cmake .. -DREGEX_DIR=C:\dev\work\gisinternals\regex-0.12
   cmake .. -DWITH_POSTGIS=0 -DWITH_SOS=1 -DWITH_KML=1
   cmake .. -DWITH_CLIENT_WMS=1 -DWITH_CLIENT_WFS=1
   cmake .. -DWITH_THREAD_SAFETY=1 -DWITH_FCGI=1
-  cmake .. -DWITH_CAIRO=1 -DCAIRO_LIBRARY=C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\lib\cairo.lib
-  cmake .. -DWITH_SVGCAIRO=1 -DSVGCAIRO_LIBRARY=C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\lib\libsvg-cairo.lib
-  cmake .. -DSVG_LIBRARY=1 -DSVG_LIBRARY=C:\dev\work\release-1700-gdal-2-1-2-mapserver-7-0-2\lib\libsvg.lib
+  cmake .. -DWITH_CAIRO=1 -DCAIRO_LIBRARY=C:\dev\work\gisinternals\lib\cairo.lib
+  cmake .. -DWITH_SVGCAIRO=1 -DSVGCAIRO_LIBRARY=C:\dev\work\gisinternals\lib\libsvg-cairo.lib
+  cmake .. -DSVG_LIBRARY=1 -DSVG_LIBRARY=C:\dev\work\gisinternals\lib\libsvg.lib
 5. build
   nmake
 
