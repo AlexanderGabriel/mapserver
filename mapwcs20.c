@@ -2009,12 +2009,18 @@ static void msWCSCommon20_CreateDomainSet(layerObj* layer, wcs20coverageMetadata
 {
   xmlNodePtr psDomainSet, psGrid, psLimits, psGridEnvelope, psOrigin,
              psOffsetX, psOffsetY;
-  char low[100], high[100], id[100], point[100], resx[100], resy[100], axisLabels[100];
+  char low[100], high[100], id[100], point[100];
+  char offsetVector1[100], offsetVector2[100], axisLabels[100];
 
   psDomainSet = xmlNewChild( psRoot, psGmlNs, BAD_CAST "domainSet", NULL);
   {
     psGrid = xmlNewChild(psDomainSet, psGmlNs, BAD_CAST "RectifiedGrid", NULL);
     {
+      double x0 = cm->geotransform[0]+cm->geotransform[1]/2+cm->geotransform[2]/2;
+      double y0 = cm->geotransform[3]+cm->geotransform[4]/2+cm->geotransform[5]/2;
+      double resx = cm->geotransform[1];
+      double resy = cm->geotransform[5];
+
       xmlNewProp(psGrid, BAD_CAST "dimension", BAD_CAST "2");
       snprintf(id, sizeof(id), "grid_%s", layer->name);
       xmlNewNsProp(psGrid, psGmlNs, BAD_CAST "id", BAD_CAST id);
@@ -2032,17 +2038,9 @@ static void msWCSCommon20_CreateDomainSet(layerObj* layer, wcs20coverageMetadata
       }
 
       if(projection->proj != NULL && pj_is_latlong(projection->proj)) {
-        if (swapAxes == MS_FALSE) {
-          strlcpy(axisLabels, "long lat", sizeof(axisLabels));
-        } else {
-          strlcpy(axisLabels, "lat long", sizeof(axisLabels));
-        }
+        strlcpy(axisLabels, "long lat", sizeof(axisLabels));
       } else {
-        if (swapAxes == MS_FALSE) {
-          strlcpy(axisLabels, "x y", sizeof(axisLabels));
-        } else {
-          strlcpy(axisLabels, "y x", sizeof(axisLabels));
-        }
+        strlcpy(axisLabels, "x y", sizeof(axisLabels));
       }
 
       xmlNewChild(psGrid, psGmlNs, BAD_CAST "axisLabels", BAD_CAST axisLabels);
@@ -2050,9 +2048,9 @@ static void msWCSCommon20_CreateDomainSet(layerObj* layer, wcs20coverageMetadata
       psOrigin = xmlNewChild(psGrid, psGmlNs, BAD_CAST "origin", NULL);
       {
         if (swapAxes == MS_FALSE) {
-          snprintf(point, sizeof(point), "%f %f", cm->extent.minx, cm->extent.maxy);
+          snprintf(point, sizeof(point), "%f %f", x0, y0);
         } else {
-          snprintf(point, sizeof(point), "%f %f", cm->extent.maxy, cm->extent.minx);
+          snprintf(point, sizeof(point), "%f %f", y0, x0);
         }
         psOrigin = xmlNewChild(psOrigin, psGmlNs, BAD_CAST "Point", NULL);
         snprintf(id, sizeof(id), "grid_origin_%s", layer->name);
@@ -2063,14 +2061,14 @@ static void msWCSCommon20_CreateDomainSet(layerObj* layer, wcs20coverageMetadata
       }
 
       if (swapAxes == MS_FALSE) {
-        snprintf(resx, sizeof(resx), "%f 0", cm->xresolution);
-        snprintf(resy, sizeof(resy), "0 %f", -fabs(cm->yresolution));
+        snprintf(offsetVector1, sizeof(offsetVector1), "%f 0", resx);
+        snprintf(offsetVector2, sizeof(offsetVector2), "0 %f", resy);
       } else {
-        snprintf(resx, sizeof(resx), "0 %f", cm->xresolution);
-        snprintf(resy, sizeof(resy), "%f 0", -fabs(cm->yresolution));
+        snprintf(offsetVector1, sizeof(offsetVector1), "0 %f", resx);
+        snprintf(offsetVector2, sizeof(offsetVector2), "%f 0", resy);
       }
-      psOffsetX = xmlNewChild(psGrid, psGmlNs, BAD_CAST "offsetVector", BAD_CAST resx);
-      psOffsetY = xmlNewChild(psGrid, psGmlNs, BAD_CAST "offsetVector", BAD_CAST resy);
+      psOffsetX = xmlNewChild(psGrid, psGmlNs, BAD_CAST "offsetVector", BAD_CAST offsetVector1);
+      psOffsetY = xmlNewChild(psGrid, psGmlNs, BAD_CAST "offsetVector", BAD_CAST offsetVector2);
 
       xmlNewProp(psOffsetX, BAD_CAST "srsName", BAD_CAST cm->srs_uri);
       xmlNewProp(psOffsetY, BAD_CAST "srsName", BAD_CAST cm->srs_uri);
@@ -2683,7 +2681,26 @@ static int msWCSGetCoverageMetadata20(layerObj *layer, wcs20coverageMetadataObj 
       } else if( (value = msOWSLookupMetadata(&(layer->metadata), "CO", wcs11_band_names_key)) != NULL ) {
         keys = wcs11_keys;
         interval_key = wcs11_interval_key;
-        band_names = msStringSplit(value, ' ', &num_band_names);
+        /* "bands" has a special processing in WCS 1.0. See */
+        /* msWCSSetDefaultBandsRangeSetInfo */
+        if( EQUAL(value, "bands") )
+        {
+            num_band_names = cm->numbands;
+            band_names = (char**) msSmallMalloc( sizeof(char*) * num_band_names );
+            for( i = 0; i < num_band_names; i++ )
+            {
+                char szName[30];
+                snprintf(szName, sizeof(szName), "Band%d", i+1);
+                band_names[i] = msStrdup(szName);
+            }
+        }
+        else
+        {
+            /* WARNING: in WCS 1.x,, "rangeset_axes" has never been intended */
+            /* to contain the list of band names... This code should probably */
+            /* be removed */
+            band_names = msStringSplit(value, ' ', &num_band_names);
+        }
       }
 
       /* return with error when number of bands does not match    */
@@ -3754,13 +3771,29 @@ static int msWCSGetCoverage20_GetBands(mapObj *map, layerObj *layer,
   maxlen = cm->numbands * 4 * sizeof(char);
   *bandlist = msSmallCalloc(sizeof(char), maxlen);
 
-  if (NULL == (tmp = msOWSGetEncodeMetadata(&layer->metadata,
-                     "CO", "rangeset_axes", NULL))) {
-    tmp = msOWSGetEncodeMetadata(&layer->metadata,
+  /* Use WCS 2.0 metadata items in priority */
+  tmp = msOWSGetEncodeMetadata(&layer->metadata,
                                  "CO", "band_names", NULL);
+  if( NULL == tmp ) {
+      /* Otherwise default to WCS 1.x*/
+      tmp = msOWSGetEncodeMetadata(&layer->metadata,
+                     "CO", "rangeset_axes", NULL);
+      /* "bands" has a special processing in WCS 1.0. See */
+      /* msWCSSetDefaultBandsRangeSetInfo */
+      if( tmp != NULL && EQUAL(tmp, "bands") )
+      {
+        int num_band_names = cm->numbands;
+        band_ids = (char**) msSmallCalloc( sizeof(char*), (num_band_names + 1) );
+        for( i = 0; i < num_band_names; i++ )
+        {
+            char szName[30];
+            snprintf(szName, sizeof(szName), "Band%d", i+1);
+            band_ids[i] = msStrdup(szName);
+        }
+      }
   }
 
-  if(NULL != tmp) {
+  if(NULL != tmp && band_ids == NULL) {
     band_ids = CSLTokenizeString2(tmp, " ", 0);
     msFree(tmp);
   }
@@ -4074,6 +4107,10 @@ int msWCSGetCoverage20(mapObj *map, cgiRequestObj *request,
   double x_1, x_2, y_1, y_2;
   char *coverageName, *bandlist=NULL, numbands[8];
 
+
+  int widthFromComputationInImageCRS = 0;
+  int heightFromComputationInImageCRS = 0;
+
   /* number of coverage ids should be 1 */
   if (params->ids == NULL || params->ids[0] == NULL) {
     msSetError(MS_WCSERR, "Required parameter CoverageID was not supplied.",
@@ -4235,6 +4272,42 @@ this request. Check wcs/ows_enable_request settings.", "msWCSGetCoverage20()", p
     }
 
     if(msProjectionsDiffer(&imageProj, &subsetProj)) {
+#ifdef USE_PROJ
+      /* Reprojection of source raster extent of (-180,-90,180,90) to any */
+      /* projected CRS is going to exhibit strong anomalies. So instead */
+      /* do the reverse, project the subset extent to the layer CRS, and */
+      /* see how much the subset extent takes with respect to the source */
+      /* raster extent. This is only used if output width and resolutionX (or */
+      /* (height and resolutionY) are unknown. */
+      if( ((params->width == 0 && params->resolutionX == MS_WCS20_UNBOUNDED) ||
+           (params->height == 0 && params->resolutionY == MS_WCS20_UNBOUNDED)) &&
+          (pj_is_latlong(imageProj.proj) &&
+           !pj_is_latlong(subsetProj.proj) &&
+           fabs(layer->extent.minx - -180.0) < 1e-5 &&
+           fabs(layer->extent.miny - -90.0) < 1e-5 &&
+           fabs(layer->extent.maxx - 180.0) < 1e-5 &&
+           fabs(layer->extent.maxy - 90.0) < 1e-5) )
+      {
+          rectObj subsetInImageProj = subsets;
+          if( msProjectRect(&subsetProj, &imageProj, &(subsetInImageProj)) == MS_SUCCESS )
+          {
+            subsetInImageProj.minx = MS_MAX(subsetInImageProj.minx, layer->extent.minx);
+            subsetInImageProj.miny = MS_MAX(subsetInImageProj.miny, layer->extent.miny);
+            subsetInImageProj.maxx = MS_MIN(subsetInImageProj.maxx, layer->extent.maxx);
+            subsetInImageProj.maxy = MS_MIN(subsetInImageProj.maxy, layer->extent.maxy);
+            {
+                double total = ABS(layer->extent.maxx - layer->extent.minx);
+                double part = ABS(subsetInImageProj.maxx - subsetInImageProj.minx);
+                widthFromComputationInImageCRS = MS_NINT((part * map->width) / total);
+            }
+            {
+                double total = ABS(layer->extent.maxy - layer->extent.miny);
+                double part = ABS(subsetInImageProj.maxy - subsetInImageProj.miny);
+                heightFromComputationInImageCRS = MS_NINT((part * map->height) / total);
+            }
+          }
+      }
+#endif
       msProjectRect(&imageProj, &subsetProj, &(layer->extent));
       map->extent = layer->extent;
       msFreeProjection(&(map->projection));
@@ -4285,7 +4358,9 @@ this request. Check wcs/ows_enable_request settings.", "msWCSGetCoverage20()", p
   } else if(params->resolutionX != MS_WCS20_UNBOUNDED) {
     params->width = MS_NINT((bbox.maxx - bbox.minx) / params->resolutionX);
   } else {
-    if(ABS(bbox.maxx - bbox.minx) != ABS(map->extent.maxx - map->extent.minx)) {
+    if( widthFromComputationInImageCRS != 0 ) {
+      params->width = widthFromComputationInImageCRS;
+    } else if(ABS(bbox.maxx - bbox.minx) != ABS(map->extent.maxx - map->extent.minx)) {
       double total = ABS(map->extent.maxx - map->extent.minx),
              part = ABS(bbox.maxx - bbox.minx);
       params->width = MS_NINT((part * map->width) / total);
@@ -4307,7 +4382,9 @@ this request. Check wcs/ows_enable_request settings.", "msWCSGetCoverage20()", p
   } else if(params->resolutionY != MS_WCS20_UNBOUNDED) {
     params->height = MS_NINT((bbox.maxy - bbox.miny) / params->resolutionY);
   } else {
-    if(ABS(bbox.maxy - bbox.miny) != ABS(map->extent.maxy - map->extent.miny)) {
+    if( heightFromComputationInImageCRS != 0 ) {
+      params->height = heightFromComputationInImageCRS;
+    } else if(ABS(bbox.maxy - bbox.miny) != ABS(map->extent.maxy - map->extent.miny)) {
       double total = ABS(map->extent.maxy - map->extent.miny),
              part = ABS(bbox.maxy - bbox.miny);
       params->height = MS_NINT((part * map->height) / total);

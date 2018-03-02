@@ -83,7 +83,8 @@ msNearestRasterResampler( imageObj *psSrcImage, rasterBufferObj *src_rb,
                           imageObj *psDstImage, rasterBufferObj *dst_rb,
                           int *panCMap,
                           SimpleTransformer pfnTransform, void *pCBData,
-                          int debug, rasterBufferObj *mask_rb )
+                          int debug, rasterBufferObj *mask_rb,
+                          int bWrapAtLeftRight )
 
 {
   double  *x, *y;
@@ -121,6 +122,9 @@ msNearestRasterResampler( imageObj *psSrcImage, rasterBufferObj *src_rb,
 
       nSrcX = (int) x[nDstX];
       nSrcY = (int) y[nDstX];
+
+      if( bWrapAtLeftRight && nSrcX >= nSrcXSize && nSrcX < 2 * nSrcXSize )
+          nSrcX -= nSrcXSize;
 
       /*
        * We test the original floating point values to
@@ -302,7 +306,8 @@ msBilinearRasterResampler( imageObj *psSrcImage, rasterBufferObj *src_rb,
                            imageObj *psDstImage, rasterBufferObj *dst_rb,
                            int *panCMap,
                            SimpleTransformer pfnTransform, void *pCBData,
-                           int debug, rasterBufferObj *mask_rb )
+                           int debug, rasterBufferObj *mask_rb,
+                           int bWrapAtLeftRight )
 
 {
   double  *x, *y;
@@ -359,31 +364,32 @@ msBilinearRasterResampler( imageObj *psSrcImage, rasterBufferObj *src_rb,
       dfRatioY2 = y[nDstX] - nSrcY;
 
       /* If we are right off the source, skip this pixel */
-      if( nSrcX2 < 0 || nSrcX >= nSrcXSize
+      if( nSrcX2 < 0 || (!bWrapAtLeftRight && nSrcX >= nSrcXSize)
           || nSrcY2 < 0 || nSrcY >= nSrcYSize )
         continue;
 
       /* Trim in stuff one pixel off the edge */
       nSrcX = MS_MAX(nSrcX,0);
       nSrcY = MS_MAX(nSrcY,0);
-      nSrcX2 = MS_MIN(nSrcX2,nSrcXSize-1);
+      if( !bWrapAtLeftRight )
+        nSrcX2 = MS_MIN(nSrcX2,nSrcXSize-1);
       nSrcY2 = MS_MIN(nSrcY2,nSrcYSize-1);
 
       memset( padfPixelSum, 0, sizeof(double) * bandCount);
 
-      msSourceSample( psSrcImage, src_rb, nSrcX, nSrcY, padfPixelSum,
+      msSourceSample( psSrcImage, src_rb, nSrcX % nSrcXSize, nSrcY, padfPixelSum,
                       (1.0 - dfRatioX2) * (1.0 - dfRatioY2),
                       &dfWeightSum );
 
-      msSourceSample( psSrcImage, src_rb, nSrcX2, nSrcY, padfPixelSum,
+      msSourceSample( psSrcImage, src_rb, nSrcX2 % nSrcXSize, nSrcY, padfPixelSum,
                       (dfRatioX2) * (1.0 - dfRatioY2),
                       &dfWeightSum );
 
-      msSourceSample( psSrcImage, src_rb, nSrcX, nSrcY2, padfPixelSum,
+      msSourceSample( psSrcImage, src_rb, nSrcX % nSrcXSize, nSrcY2, padfPixelSum,
                       (1.0 - dfRatioX2) * (dfRatioY2),
                       &dfWeightSum );
 
-      msSourceSample( psSrcImage, src_rb, nSrcX2, nSrcY2, padfPixelSum,
+      msSourceSample( psSrcImage, src_rb, nSrcX2 % nSrcXSize, nSrcY2, padfPixelSum,
                       (dfRatioX2) * (dfRatioY2),
                       &dfWeightSum );
 
@@ -1123,6 +1129,115 @@ static int msTransformMapToSource( int nDstXSize, int nDstYSize,
     }
   }
 
+  /* -------------------------------------------------------------------- */
+  /*      Deal with discontinuities related to lon_wrap=XXX in source     */
+  /*      projection. In that case we must check if the points at         */
+  /*      lon_wrap +/- 180deg are in the output raster.                   */
+  /* -------------------------------------------------------------------- */
+  if( bOutInit && pj_is_latlong(psSrcProj->proj) )
+  {
+      double dfLonWrap = 0;
+      int bHasLonWrap = msProjectHasLonWrap(psSrcProj, &dfLonWrap);
+
+      if( bHasLonWrap )
+      {
+          double x2[2], y2[2], z2[2];
+          int nCountY = 0;
+          double dfY = 0.0;
+          double dfXMinOut = 0.0;
+          double dfYMinOut = 0.0;
+          double dfXMaxOut = 0.0;
+          double dfYMaxOut = 0.0;
+
+          /* Find out average y coordinate in src projection */
+          for( i = 0; i < nSamples; i++ ) {
+              if( y[i] != HUGE_VAL ) {
+                  dfY += y[i];
+                  nCountY ++;
+              }
+          }
+          dfY /= nCountY;
+
+          /* Compute bounds of output raster */
+          for( i = 0; i < 4; i ++ )
+          {
+              double dfX = adfDstGeoTransform[0] +
+                ((i == 1 || i == 2) ? nDstXSize : 0) * adfDstGeoTransform[1] +
+                ((i == 1 || i == 3 ) ? nDstYSize : 0) * adfDstGeoTransform[2];
+              double dfY = adfDstGeoTransform[3] +
+                ((i == 1 || i == 2) ? nDstXSize : 0) * adfDstGeoTransform[4] +
+                ((i == 1 || i == 3 ) ? nDstYSize : 0) * adfDstGeoTransform[5];
+              if( i == 0 || dfX < dfXMinOut ) dfXMinOut = dfX;
+              if( i == 0 || dfY < dfYMinOut ) dfYMinOut = dfY;
+              if( i == 0 || dfX > dfXMaxOut ) dfXMaxOut = dfX;
+              if( i == 0 || dfY > dfYMaxOut ) dfYMaxOut = dfY;
+          }
+
+          x2[0] = dfLonWrap-180+1e-7;
+          y2[0] = dfY;
+          z2[0] = 0.0;
+
+          x2[1] = dfLonWrap+180-1e-7;
+          y2[1] = dfY;
+          z2[1] = 0.0;
+
+          msAcquireLock( TLOCK_PROJ );
+          pj_transform( psSrcProj->proj, psDstProj->proj,
+                        2, 1, x2, y2, z2 );
+          msReleaseLock( TLOCK_PROJ );
+
+          if( x2[0] >= dfXMinOut && x2[0] <= dfXMaxOut &&
+              y2[0] >= dfYMinOut && y2[0] <= dfYMaxOut )
+          {
+                double x_out =      adfInvSrcGeoTransform[0]
+                            +   (dfLonWrap-180)*adfInvSrcGeoTransform[1]
+                            +   dfY*adfInvSrcGeoTransform[2];
+                double y_out =      adfInvSrcGeoTransform[3]
+                            +   (dfLonWrap-180)*adfInvSrcGeoTransform[4]
+                            +   dfY*adfInvSrcGeoTransform[5];
+
+                /* Does the raster cover a whole 360 deg range ? */
+                if( nSrcXSize == (int)(adfInvSrcGeoTransform[1] * 360 + 0.5) )
+                {
+                    psSrcExtent->minx = 0;
+                    psSrcExtent->maxx = nSrcXSize;
+                }
+                else
+                {
+                    psSrcExtent->minx = MS_MIN(psSrcExtent->minx, x_out);
+                    psSrcExtent->maxx = MS_MAX(psSrcExtent->maxx, x_out);
+                }
+                psSrcExtent->miny = MS_MIN(psSrcExtent->miny, y_out);
+                psSrcExtent->maxy = MS_MAX(psSrcExtent->maxy, y_out);
+          }
+
+          if( x2[1] >= dfXMinOut && x2[1] <= dfXMaxOut &&
+              x2[1] >= dfYMinOut && y2[1] <= dfYMaxOut )
+          {
+                double x_out =      adfInvSrcGeoTransform[0]
+                            +   (dfLonWrap+180)*adfInvSrcGeoTransform[1]
+                            +   dfY*adfInvSrcGeoTransform[2];
+                double y_out =      adfInvSrcGeoTransform[3]
+                            +   (dfLonWrap+180)*adfInvSrcGeoTransform[4]
+                            +   dfY*adfInvSrcGeoTransform[5];
+
+                /* Does the raster cover a whole 360 deg range ? */
+                if( nSrcXSize == (int)(adfInvSrcGeoTransform[1] * 360 + 0.5) )
+                {
+                    psSrcExtent->minx = 0;
+                    psSrcExtent->maxx = nSrcXSize;
+                }
+                else
+                {
+                    psSrcExtent->minx = MS_MIN(psSrcExtent->minx, x_out);
+                    psSrcExtent->maxx = MS_MAX(psSrcExtent->maxx, x_out);
+                }
+                psSrcExtent->miny = MS_MIN(psSrcExtent->miny, y_out);
+                psSrcExtent->maxy = MS_MAX(psSrcExtent->maxy, y_out);
+          }
+      }
+  }
+
   if( !bOutInit )
     return MS_FALSE;
 
@@ -1181,6 +1296,7 @@ int msResampleGDALToMap( mapObj *map, layerObj *layer, imageObj *image,
   double      dfOversampleRatio;
   rasterBufferObj src_rb, *psrc_rb = NULL, *mask_rb = NULL;
   int         bAddPixelMargin = MS_TRUE;
+  int         bWrapAtLeftRight = MS_FALSE;
 
 
   const char *resampleMode = CSLFetchNameValue( layer->processing,
@@ -1240,14 +1356,47 @@ int msResampleGDALToMap( mapObj *map, layerObj *layer, imageObj *image,
   /* -------------------------------------------------------------------- */
   if( CSLFetchBoolean( layer->processing, "LOAD_WHOLE_IMAGE", FALSE ) )
     bSuccess = FALSE;
-  else
+  else {
     bSuccess =
       msTransformMapToSource( nDstXSize, nDstYSize, adfDstGeoTransform,
                               &(map->projection),
                               nSrcXSize, nSrcYSize,adfInvSrcGeoTransform,
                               &(layer->projection),
                               &sSrcExtent, FALSE );
+      if (bSuccess) {
+    /* -------------------------------------------------------------------- */
+    /*      Repeat transformation for a rectangle interior to the output    */
+    /*      requested region.  If the latter results in a more extreme y    */
+    /*      extent, then extend extents in source layer projection to       */
+    /*      southern/northing bounds and entire x extent.                   */
+    /* -------------------------------------------------------------------- */
+      memcpy( &sOrigSrcExtent, &sSrcExtent, sizeof(sSrcExtent) );
+      adfDstGeoTransform[0] = adfDstGeoTransform[0] + adfDstGeoTransform[1];
+      adfDstGeoTransform[3] = adfDstGeoTransform[3] + adfDstGeoTransform[5];
+      bSuccess =
+          msTransformMapToSource( nDstXSize-2, nDstYSize-2, adfDstGeoTransform,
+                                  &(map->projection),
+                                  nSrcXSize, nSrcYSize,adfInvSrcGeoTransform,
+                                  &(layer->projection),
+                                  &sSrcExtent, FALSE );
+      /* Reset this array to its original value! */
+      memcpy( adfDstGeoTransform, map->gt.geotransform, sizeof(double)*6 );
 
+      if (bSuccess) {
+          if (sSrcExtent.maxy > sOrigSrcExtent.maxy || sSrcExtent.miny < sOrigSrcExtent.miny) {
+              msDebug( "msTransformMapToSource(): extending bounds.\n");
+              sOrigSrcExtent.minx = 0;
+              sOrigSrcExtent.maxx = nSrcXSize;
+              if (sSrcExtent.maxy > sOrigSrcExtent.maxy)
+                  sOrigSrcExtent.maxy = nSrcYSize;
+              if (sSrcExtent.miny < sOrigSrcExtent.miny)
+                  sOrigSrcExtent.miny = 0;
+          }
+      }
+      memcpy( &sSrcExtent, &sOrigSrcExtent, sizeof(sOrigSrcExtent) );
+      bSuccess = TRUE;
+    }
+  }
   /* -------------------------------------------------------------------- */
   /*      If the transformation failed, it is likely that we have such    */
   /*      broad extents that the projection transformation failed at      */
@@ -1370,7 +1519,16 @@ int msResampleGDALToMap( mapObj *map, layerObj *layer, imageObj *image,
     sqrt(adfSrcGeoTransform[1] * adfSrcGeoTransform[1]
          + adfSrcGeoTransform[2] * adfSrcGeoTransform[2]);
 
-  if( (sOrigSrcExtent.maxx - sOrigSrcExtent.minx) > dfOversampleRatio * nDstXSize
+  /* Check first that the requested extent is not well beyond than the source */
+  /* raster. This might be the case for example if asking to visualize */
+  /* -180,-89,180,90 in EPSG:4326 from a raster in Arctic Polar Stereographic */
+  /* But restrict that to rasters of modest size, otherwise we may end up */
+  /* requesting very large dimensions in other legit reprojection cases */
+  /* See https://github.com/mapserver/mapserver/issues/5402 */
+  if( !(sOrigSrcExtent.minx <= -4 * nSrcXSize  && sOrigSrcExtent.miny <= -4 * nSrcYSize &&
+        sOrigSrcExtent.maxx >= 5 * nSrcXSize && sOrigSrcExtent.maxy >= 5 * nSrcYSize &&
+        nSrcXSize < 4000 && nSrcYSize < 4000)
+      && (sOrigSrcExtent.maxx - sOrigSrcExtent.minx) > dfOversampleRatio * nDstXSize
       && !CSLFetchBoolean( layer->processing, "LOAD_FULL_RES_IMAGE", FALSE ))
     sDummyMap.cellsize =
       (dfNominalCellSize * (sOrigSrcExtent.maxx - sOrigSrcExtent.minx))
@@ -1407,6 +1565,23 @@ int msResampleGDALToMap( mapObj *map, layerObj *layer, imageObj *image,
     + adfSrcGeoTransform[5] * sSrcExtent.miny;
   adfSrcGeoTransform[4] *= (sDummyMap.cellsize / dfNominalCellSize);
   adfSrcGeoTransform[5] *= (sDummyMap.cellsize / dfNominalCellSize);
+
+  /* In the non-rotated case, make sure that the geotransform exactly */
+  /* matches the sSrcExtent, even if that generates non-square pixels (#1715) */
+  /* The rotated case should ideally be dealt with, but not for now... */
+  if( adfSrcGeoTransform[2] == 0 && adfSrcGeoTransform[4] == 0 &&
+      adfSrcGeoTransform[5] < 0 &&
+      /* But do that only if the pixels were square before, otherwise */
+      /* this is going to mess with source rasters whose pixels aren't at */
+      /* all square (#5445) */
+      fabs(fabs(adfSrcGeoTransform[1]) - fabs(adfSrcGeoTransform[5])) <
+                                        0.01 * fabs(adfSrcGeoTransform[1]) )
+  {
+      adfSrcGeoTransform[1] = (sSrcExtent.maxx - sSrcExtent.minx) *
+                                            dfNominalCellSize / nLoadImgXSize;
+      adfSrcGeoTransform[5] = -(sSrcExtent.maxy - sSrcExtent.miny) *
+                                            dfNominalCellSize / nLoadImgYSize;
+  }
 
   papszAlteredProcessing = CSLDuplicate( layer->processing );
   papszAlteredProcessing =
@@ -1528,6 +1703,13 @@ int msResampleGDALToMap( mapObj *map, layerObj *layer, imageObj *image,
   /* -------------------------------------------------------------------- */
   pACBData = msInitApproxTransformer( msProjTransformer, pTCBData, 0.333 );
 
+  if( pj_is_latlong(layer->projection.proj) )
+  {
+      /* Does the raster cover a whole 360 deg range ? */
+      if( nSrcXSize == (int)(adfInvSrcGeoTransform[1] * 360 + 0.5) )
+          bWrapAtLeftRight = MS_TRUE;
+  }
+
   /* -------------------------------------------------------------------- */
   /*      Perform the resampling.                                         */
   /* -------------------------------------------------------------------- */
@@ -1540,12 +1722,12 @@ int msResampleGDALToMap( mapObj *map, layerObj *layer, imageObj *image,
     result =
       msBilinearRasterResampler( srcImage, psrc_rb, image, rb,
                                  anCMap, msApproxTransformer, pACBData,
-                                 layer->debug, mask_rb );
+                                 layer->debug, mask_rb, bWrapAtLeftRight );
   else
     result =
       msNearestRasterResampler( srcImage, psrc_rb, image, rb,
                                 anCMap, msApproxTransformer, pACBData,
-                                layer->debug, mask_rb );
+                                layer->debug, mask_rb, bWrapAtLeftRight );
 
   /* -------------------------------------------------------------------- */
   /*      cleanup                                                         */

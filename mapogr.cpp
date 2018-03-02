@@ -33,6 +33,8 @@
 #include "mapproject.h"
 #include "mapthread.h"
 #include "mapows.h"
+#include <string>
+#include <vector>
 
 #if defined(USE_OGR) || defined(USE_GDAL)
 #  include "gdal_version.h"
@@ -76,6 +78,8 @@ typedef struct ms_ogr_file_info_t {
   char* pszTablePrefix; // prefix to qualify field names. used only for spatialite for now when a join is done for spatial filtering.
 
   int   bPaging;
+
+  char* pszWHERE;
 
 } msOGRFileInfo;
 
@@ -504,6 +508,9 @@ int msOGRGeometryToShape(OGRGeometryH hGeometry, shapeObj *psShape,
 
 // Special field index codes for handling text string and angle coming from
 // OGR style strings.
+
+#define MSOGR_FID_INDEX            -99
+
 #define MSOGR_LABELNUMITEMS        21
 #define MSOGR_LABELFONTNAMENAME    "OGR:LabelFont"
 #define MSOGR_LABELFONTNAMEINDEX   -100
@@ -602,6 +609,9 @@ static char **msOGRGetValues(layerObj *layer, OGRFeatureH hFeature)
     if (itemindexes[i] >= 0) {
       // Extract regular attributes
       values[i] = msStrdup(OGR_F_GetFieldAsString( hFeature, itemindexes[i]));
+    } else if (itemindexes[i] == MSOGR_FID_INDEX ) {
+      values[i] = msStrdup(CPLSPrintf(CPL_FRMT_GIB,
+                                      (GIntBig) OGR_F_GetFID(hFeature)));
     } else {
       // Handle special OGR attributes coming from StyleString
       if (!hStyleMgr) {
@@ -1283,6 +1293,17 @@ msOGRFileOpen(layerObj *layer, const char *connection )
   psInfo->last_record_index_read = -1;
   psInfo->dialect = NULL;
 
+  psInfo->pszSelect = NULL;
+  psInfo->pszSpatialFilterTableName = NULL;
+  psInfo->pszSpatialFilterGeometryColumn = NULL;
+  psInfo->pszMainTableName = NULL;
+  psInfo->pszRowId = NULL;
+  psInfo->bIsOKForSQLCompose = true;
+  psInfo->bPaging = false;
+  psInfo->bHasSpatialIndex = false;
+  psInfo->pszTablePrefix = NULL;
+  psInfo->pszWHERE = NULL;
+
     // GDAL 1.x API
   OGRSFDriverH dr = OGR_DS_GetDriver(hDS);
   const char *name = OGR_Dr_GetName(dr);
@@ -1321,18 +1342,60 @@ msOGRFileOpen(layerObj *layer, const char *connection )
     psInfo->dialect = "PostgreSQL";
     // todo: PostgreSQL not yet tested
 
-  } // todo: other dialects, for example OGR SQL
+  } else if (strcmp(name, "GPKG") == 0 && nLayerIndex >= 0 &&
+             atoi(GDALVersionInfo("VERSION_NUM")) >= 2000000) {
 
+    bool has_rtree = false;
+    const char* test_rtree =
+        CPLSPrintf("SELECT 1 FROM sqlite_master WHERE name = 'rtree_%s_%s'",
+                   OGR_L_GetName(hLayer), OGR_L_GetGeometryColumn(hLayer));
+    OGRLayerH l = OGR_DS_ExecuteSQL(hDS, test_rtree, NULL, NULL);
+    if( l )
+    {
+        if( OGR_L_GetFeatureCount(l, TRUE) == 1 )
+        {
+            has_rtree = true;
+        }
+        OGR_DS_ReleaseResultSet(hDS, l);
+    }
+    if( has_rtree )
+    {
+        bool have_gpkg_spatialite = false;
 
-  psInfo->pszSelect = NULL;
-  psInfo->pszSpatialFilterTableName = NULL;
-  psInfo->pszSpatialFilterGeometryColumn = NULL;
-  psInfo->pszMainTableName = NULL;
-  psInfo->pszRowId = NULL;
-  psInfo->bIsOKForSQLCompose = true;
-  psInfo->bPaging = false;
-  psInfo->bHasSpatialIndex = false;
-  psInfo->pszTablePrefix = NULL;
+        CPLPushErrorHandler(CPLQuietErrorHandler);
+
+        // test for Spatialite >= 4.3 support in driver
+        const char *test_spatialite = "SELECT spatialite_version()";
+        l = OGR_DS_ExecuteSQL(hDS, test_spatialite, NULL, NULL);
+        if (l) {
+            OGRFeatureH hFeat = OGR_L_GetNextFeature(l);
+            if( hFeat )
+            {
+                const char* pszVersion = OGR_F_GetFieldAsString(hFeat, 0);
+                have_gpkg_spatialite = atof(pszVersion) >= 4.3;
+                OGR_F_Destroy(hFeat);
+            }
+            OGR_DS_ReleaseResultSet(hDS, l);
+        }
+        CPLPopErrorHandler();
+
+        if( have_gpkg_spatialite )
+        {
+            psInfo->pszMainTableName = msStrdup( OGR_L_GetName(hLayer) );
+            psInfo->pszSpatialFilterTableName = msStrdup( OGR_L_GetName(hLayer) );
+            psInfo->pszSpatialFilterGeometryColumn = msStrdup( OGR_L_GetGeometryColumn(hLayer) );
+            psInfo->dialect = "GPKG";
+            psInfo->bPaging = true;
+            psInfo->bHasSpatialIndex = true;
+        }
+        else
+            msDebug("msOGRFileOpen: Spatialite support in GPKG not enabled\n");
+    }
+    else
+    {
+        msDebug("msOGRFileOpen: RTree index not available\n");
+    }
+  }
 
   if( psInfo->dialect != NULL && EQUAL(psInfo->dialect, "Spatialite") )
     msOGRFileOpenSpatialite(layer, pszLayerDef, psInfo);
@@ -1637,6 +1700,7 @@ static int msOGRFileClose(layerObj *layer, msOGRFileInfo *psInfo )
   msFree(psInfo->pszMainTableName);
   msFree(psInfo->pszRowId);
   msFree(psInfo->pszTablePrefix);
+  msFree(psInfo->pszWHERE);
 
   CPLFree(psInfo);
 
@@ -1806,7 +1870,7 @@ char *msOGRGetToken(layerObj* layer, tokenListNodeObjPtr *node) {
         char wild_any =  '%';
         char wild_one = '_';
 
-        if (EQUAL(info->dialect, "Spatialite")) {
+        if (EQUAL(info->dialect, "Spatialite") || EQUAL(info->dialect, "GPKG")) {
             if (case_sensitive) {
                 op = "GLOB";
                 wild_any = '*';
@@ -1926,7 +1990,7 @@ char *msOGRGetToken(layerObj* layer, tokenListNodeObjPtr *node) {
         else
         {
             const char *SQLtype = "float(16)";
-            if (EQUAL(info->dialect, "Spatialite"))
+            if (EQUAL(info->dialect, "Spatialite") || EQUAL(info->dialect, "GPKG"))
                 SQLtype = "REAL";
             else if (EQUAL(info->dialect, "PostgreSQL"))
                 SQLtype = "double precision";
@@ -2112,6 +2176,9 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
                                         layer->filter.native_string ||
                                         (psInfo->bPaging && layer->maxfeatures > 0)) ) {
 
+        const bool bHasGeometry = 
+                                OGR_L_GetGeomType( psInfo->hLayer ) != wkbNone;
+
         if( psInfo->nLayerIndex == -1 && select == NULL ) {
             select = msStrdup(psInfo->pszLayerDef);
             /* If nLayerIndex == -1 then the layer is an SQL result ... free it */
@@ -2205,17 +2272,19 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
         }
         psInfo->rect = rect;
 
-        bool bSpatialiteAddOrderByFID = false;
+        bool bSpatialiteOrGPKGAddOrderByFID = false;
 
-        if( psInfo->dialect && EQUAL(psInfo->dialect, "Spatialite") &&
-            psInfo->pszMainTableName != NULL && psInfo->bHasSpatialIndex &&
+        if( psInfo->dialect && psInfo->pszMainTableName != NULL && 
+            ( (EQUAL(psInfo->dialect, "Spatialite") && psInfo->bHasSpatialIndex)
+              || EQUAL(psInfo->dialect, "GPKG") ) &&
             bIsValidRect )
         {
             select = msStringConcatenate(select, " JOIN ");
 
             char szSpatialIndexName[256];
             snprintf( szSpatialIndexName, sizeof(szSpatialIndexName),
-                        "idx_%s_%s",
+                        "%s_%s_%s",
+                        EQUAL(psInfo->dialect, "Spatialite") ? "idx" : "rtree",
                         psInfo->pszSpatialFilterTableName,
                         psInfo->pszSpatialFilterGeometryColumn );
             char* pszEscapedSpatialIndexName = msLayerEscapePropertyName(
@@ -2240,28 +2309,48 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
             }
             else
                 select = msStringConcatenate(select, "ROWID");
-            select = msStringConcatenate(select, " = ms_spat_idx.pkid AND ");
+            if( EQUAL(psInfo->dialect, "Spatialite") )
+                select = msStringConcatenate(select, " = ms_spat_idx.pkid AND ");
+            else
+                select = msStringConcatenate(select, " = ms_spat_idx.id AND ");
 
             char szCond[256];
-            snprintf(szCond, sizeof(szCond),
+            if( EQUAL(psInfo->dialect, "Spatialite") )
+            {
+                snprintf(szCond, sizeof(szCond),
                         "ms_spat_idx.xmin <= %.15g AND ms_spat_idx.xmax >= %.15g AND "
                         "ms_spat_idx.ymin <= %.15g AND ms_spat_idx.ymax >= %.15g",
                         rect.maxx, rect.minx, rect.maxy, rect.miny);
+            }
+            else
+            {
+                snprintf(szCond, sizeof(szCond),
+                        "ms_spat_idx.minx <= %.15g AND ms_spat_idx.maxx >= %.15g AND "
+                        "ms_spat_idx.miny <= %.15g AND ms_spat_idx.maxy >= %.15g",
+                        rect.maxx, rect.minx, rect.maxy, rect.miny);
+            }
             select = msStringConcatenate(select, szCond);
 
-            bSpatialiteAddOrderByFID = true;
+            bSpatialiteOrGPKGAddOrderByFID = true;
         }
 
-        if (psInfo->dialect) {
-            if (EQUAL(psInfo->dialect, "Spatialite") || EQUAL(psInfo->dialect, "PostgreSQL")) {
-                const char *sql = layer->filter.native_string;
-                if (sql && *sql != '\0') {
-                    if (filter) filter = msStringConcatenate(filter, "AND ");
-                    filter = msStringConcatenate(filter, "(");
-                    filter = msStringConcatenate(filter, sql);
-                    filter = msStringConcatenate(filter, ")");
-                }
-            }
+        const char *sql = layer->filter.native_string;
+        if (psInfo->dialect && sql && *sql != '\0' &&
+            (EQUAL(psInfo->dialect, "Spatialite") ||
+             EQUAL(psInfo->dialect, "GPKG") ||
+             EQUAL(psInfo->dialect, "PostgreSQL")) )
+        {
+            if (filter) filter = msStringConcatenate(filter, " AND ");
+            filter = msStringConcatenate(filter, "(");
+            filter = msStringConcatenate(filter, sql);
+            filter = msStringConcatenate(filter, ")");
+        }
+        else if( psInfo->pszWHERE )
+        {
+            if (filter) filter = msStringConcatenate(filter, " AND ");
+            filter = msStringConcatenate(filter, "(");
+            filter = msStringConcatenate(filter, psInfo->pszWHERE);
+            filter = msStringConcatenate(filter, ")");
         }
 
         bool bOffsetAlreadyAdded = false;
@@ -2318,7 +2407,7 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
             }
         }
 
-        if( bSpatialiteAddOrderByFID )
+        if( bSpatialiteOrGPKGAddOrderByFID )
         {
             if( sort == NULL )
                 sort = msStringConcatenate(NULL, " ORDER BY ");
@@ -2375,8 +2464,40 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
         {
           OGR_DS_ReleaseResultSet( psInfo->hDS, psInfo->hLayer );
         }
-        psInfo->hLayer = OGR_DS_ExecuteSQL( psInfo->hDS, select, NULL, NULL );
+
+        OGRGeometryH hGeom = NULL;
+        if( psInfo->dialect == NULL &&
+            bHasGeometry && bIsValidRect ) {
+            if (rect.minx == rect.maxx && rect.miny == rect.maxy) {
+                hGeom = OGR_G_CreateGeometry( wkbPoint );
+                OGR_G_SetPoint_2D( hGeom, 0, rect.minx, rect.miny );
+            } else if (rect.minx == rect.maxx || rect.miny == rect.maxy) {
+                hGeom = OGR_G_CreateGeometry( wkbLineString );
+                OGR_G_AddPoint_2D( hGeom, rect.minx, rect.miny );
+                OGR_G_AddPoint_2D( hGeom, rect.maxx, rect.maxy );
+            } else {
+                hGeom = OGR_G_CreateGeometry( wkbPolygon );
+                OGRGeometryH hRing = OGR_G_CreateGeometry( wkbLinearRing );
+
+                OGR_G_AddPoint_2D( hRing, rect.minx, rect.miny);
+                OGR_G_AddPoint_2D( hRing, rect.maxx, rect.miny);
+                OGR_G_AddPoint_2D( hRing, rect.maxx, rect.maxy);
+                OGR_G_AddPoint_2D( hRing, rect.minx, rect.maxy);
+                OGR_G_AddPoint_2D( hRing, rect.minx, rect.miny);
+                OGR_G_AddGeometryDirectly( hGeom, hRing );
+            }
+
+            if (layer->debug >= MS_DEBUGLEVEL_VVV)
+            {
+                msDebug("msOGRFileWhichShapes: Setting spatial filter to %.15g %.15g %.15g %.15g\n",
+                        rect.minx, rect.miny, rect.maxx, rect.maxy );
+            }
+        }
+
+        psInfo->hLayer = OGR_DS_ExecuteSQL( psInfo->hDS, select, hGeom, NULL );
         psInfo->nLayerIndex = -1;
+        if( hGeom != NULL )
+            OGR_G_DestroyGeometry(hGeom);
 
         if( psInfo->hLayer == NULL ) {
             RELEASE_OGR_LOCK;
@@ -2398,6 +2519,20 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
             pszOGRFilter = msStringConcatenate(pszOGRFilter, "(");
             pszOGRFilter = msStringConcatenate(pszOGRFilter, msLayerGetProcessingKey(layer, "NATIVE_FILTER"));
             pszOGRFilter = msStringConcatenate(pszOGRFilter, ")");
+        }
+
+        if( psInfo->pszWHERE )
+        {
+            if( pszOGRFilter )
+            {
+                pszOGRFilter = msStringConcatenate(pszOGRFilter, " AND (");
+                pszOGRFilter = msStringConcatenate(pszOGRFilter, psInfo->pszWHERE);
+                pszOGRFilter = msStringConcatenate(pszOGRFilter, ")");
+            }
+            else
+            {
+                pszOGRFilter = msStringConcatenate(pszOGRFilter, psInfo->pszWHERE);
+            }
         }
 
         ACQUIRE_OGR_LOCK;
@@ -2429,12 +2564,14 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
                 OGR_L_SetSpatialFilter( psInfo->hLayer, hSpatialFilterPolygon );
                 OGR_G_DestroyGeometry( hSpatialFilterPolygon );
             }
+
+            if (layer->debug >= MS_DEBUGLEVEL_VVV)
+            {
+                msDebug("msOGRFileWhichShapes: Setting spatial filter to %.15g %.15g %.15g %.15g\n", rect.minx, rect.miny, rect.maxx, rect.maxy );
+            }
         }
 
         psInfo->rect = rect;
-
-        if (layer->debug >= MS_DEBUGLEVEL_VVV)
-            msDebug("msOGRFileWhichShapes: Setting spatial filter to %.15g %.15g %.15g %.15g\n", rect.minx, rect.miny, rect.maxx, rect.maxy );
 
         /* ------------------------------------------------------------------
          * Apply an attribute filter if we have one prefixed with a WHERE
@@ -2449,7 +2586,7 @@ static int msOGRFileWhichShapes(layerObj *layer, rectObj rect, msOGRFileInfo *ps
             CPLErrorReset();
             if( OGR_L_SetAttributeFilter( psInfo->hLayer, pszOGRFilter ) != OGRERR_NONE ) {
                 msSetError(MS_OGRERR, "SetAttributeFilter() failed on layer %s. Check logs.", "msOGRFileWhichShapes()", layer->name?layer->name:"(null)");
-                msDebug("SetAttributeFilter(%s) failed on layer %s.\n%s\n", layer->filter.string+6, layer->name?layer->name:"(null)", CPLGetLastErrorMsg() );
+                msDebug("SetAttributeFilter(%s) failed on layer %s.\n%s\n", pszOGRFilter, layer->name?layer->name:"(null)", CPLGetLastErrorMsg() );
                 RELEASE_OGR_LOCK;
                 msFree(pszOGRFilter);
                 msFree(select);
@@ -2958,6 +3095,625 @@ NextFile:
   return MS_SUCCESS;
 }
 
+/************************************************************************/
+/*                               msExprNode                             */
+/************************************************************************/
+
+class msExprNode
+{
+    public:
+        std::vector<msExprNode*> m_aoChildren;
+        int         m_nToken;
+        std::string m_osVal;
+        double      m_dfVal;
+        struct tm   m_tmVal;
+
+        msExprNode() : m_nToken(0), m_dfVal(0.0) {}
+       ~msExprNode();
+};
+
+msExprNode::~msExprNode()
+{
+    for(size_t i=0;i<m_aoChildren.size();++i)
+        delete m_aoChildren[i];
+}
+
+/************************************************************************/
+/*                        exprGetPriority()                             */
+/************************************************************************/
+
+static int exprGetPriority(int token)
+{
+    if (token == MS_TOKEN_LOGICAL_NOT)
+        return 9;
+    else if (token == '*' || token == '/' || token == '%' )
+        return 8;
+    else if (token == '+' || token == '-' )
+        return 7;
+    else if (token == MS_TOKEN_COMPARISON_GE ||
+             token == MS_TOKEN_COMPARISON_GT ||
+             token == MS_TOKEN_COMPARISON_LE ||
+             token == MS_TOKEN_COMPARISON_LT ||
+             token == MS_TOKEN_COMPARISON_IN)
+        return 6;
+    else if (token == MS_TOKEN_COMPARISON_EQ ||
+             token == MS_TOKEN_COMPARISON_IEQ ||
+             token == MS_TOKEN_COMPARISON_LIKE ||
+             token == MS_TOKEN_COMPARISON_RE ||
+             token == MS_TOKEN_COMPARISON_IRE ||
+             token == MS_TOKEN_COMPARISON_NE)
+        return 5;
+    else if (token == MS_TOKEN_LOGICAL_AND)
+        return 4;
+    else if (token == MS_TOKEN_LOGICAL_OR)
+        return 3;
+    else
+        return 0;
+}
+
+/************************************************************************/
+/*                           BuildExprTree()                            */
+/************************************************************************/
+
+static msExprNode* BuildExprTree(tokenListNodeObjPtr node,
+                                 tokenListNodeObjPtr* pNodeNext,
+                                 int nParenthesisLevel)
+{
+    msExprNode* poRet = NULL;
+    std::vector<msExprNode*> aoStackOp, aoStackVal;
+    while( node != NULL )
+    {
+        if( node->token == '(' )
+        {
+            msExprNode* subExpr = BuildExprTree(node->next, &node,
+                                                nParenthesisLevel + 1);
+            if( subExpr == NULL )
+            {
+                goto fail;
+            }
+            aoStackVal.push_back(subExpr);
+            continue;
+        }
+        else if( node->token == ')' )
+        {
+            if( nParenthesisLevel > 0 )
+            {
+                break;
+            }
+            goto fail;
+        }
+        else if( node->token == '+' ||
+                 node->token == '-' ||
+                 node->token == '*' ||
+                 node->token == '/' ||
+                 node->token == '%' ||
+                 node->token == MS_TOKEN_LOGICAL_NOT ||
+                 node->token == MS_TOKEN_LOGICAL_AND ||
+                 node->token == MS_TOKEN_LOGICAL_OR  ||
+                 node->token == MS_TOKEN_COMPARISON_GE ||
+                 node->token == MS_TOKEN_COMPARISON_GT ||
+                 node->token == MS_TOKEN_COMPARISON_LE ||
+                 node->token == MS_TOKEN_COMPARISON_LT ||
+                 node->token == MS_TOKEN_COMPARISON_EQ ||
+                 node->token == MS_TOKEN_COMPARISON_IEQ ||
+                 node->token == MS_TOKEN_COMPARISON_LIKE ||
+                 node->token == MS_TOKEN_COMPARISON_NE ||
+                 node->token == MS_TOKEN_COMPARISON_RE ||
+                 node->token == MS_TOKEN_COMPARISON_IRE ||
+                 node->token == MS_TOKEN_COMPARISON_IN )
+        {
+            while( !aoStackOp.empty() &&
+                   exprGetPriority(node->token) <=
+                        exprGetPriority(aoStackOp.back()->m_nToken))
+            {
+                msExprNode* val1 = NULL;
+                msExprNode* val2 = NULL;
+                msExprNode* newNode = NULL;
+                if (aoStackOp.back()->m_nToken != MS_TOKEN_LOGICAL_NOT)
+                {
+                    if( aoStackVal.empty() )
+                        goto fail;
+                    val2 = aoStackVal.back();
+                    aoStackVal.pop_back();
+                }
+                if( aoStackVal.empty() )
+                    goto fail;
+                val1 = aoStackVal.back();
+                aoStackVal.pop_back();
+
+                newNode = new msExprNode;
+                newNode->m_nToken = aoStackOp.back()->m_nToken;
+                newNode->m_aoChildren.push_back(val1);
+                if( val2 )
+                    newNode->m_aoChildren.push_back(val2);
+                aoStackVal.push_back(newNode);
+                delete aoStackOp.back();
+                aoStackOp.pop_back();
+            }
+
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            aoStackOp.push_back(newNode);
+        }
+        else if( node->token == ',' )
+        {
+        }
+        else if( node->token == MS_TOKEN_COMPARISON_INTERSECTS ||
+                 node->token == MS_TOKEN_COMPARISON_DISJOINT ||
+                 node->token == MS_TOKEN_COMPARISON_TOUCHES ||
+                 node->token == MS_TOKEN_COMPARISON_OVERLAPS ||
+                 node->token == MS_TOKEN_COMPARISON_CROSSES ||
+                 node->token == MS_TOKEN_COMPARISON_DWITHIN ||
+                 node->token == MS_TOKEN_COMPARISON_BEYOND ||
+                 node->token == MS_TOKEN_COMPARISON_WITHIN ||
+                 node->token == MS_TOKEN_COMPARISON_CONTAINS ||
+                 node->token == MS_TOKEN_COMPARISON_EQUALS ||
+                 node->token == MS_TOKEN_FUNCTION_LENGTH ||
+                 node->token == MS_TOKEN_FUNCTION_TOSTRING ||
+                 node->token == MS_TOKEN_FUNCTION_COMMIFY ||
+                 node->token == MS_TOKEN_FUNCTION_AREA ||
+                 node->token == MS_TOKEN_FUNCTION_ROUND ||
+                 node->token == MS_TOKEN_FUNCTION_FROMTEXT ||
+                 node->token == MS_TOKEN_FUNCTION_BUFFER ||
+                 node->token == MS_TOKEN_FUNCTION_DIFFERENCE ||
+                 node->token == MS_TOKEN_FUNCTION_SIMPLIFY ||
+                 node->token == MS_TOKEN_FUNCTION_SIMPLIFYPT ||
+                 node->token == MS_TOKEN_FUNCTION_GENERALIZE ||
+                 node->token == MS_TOKEN_FUNCTION_SMOOTHSIA ||
+                 node->token == MS_TOKEN_FUNCTION_JAVASCRIPT ||
+                 node->token == MS_TOKEN_FUNCTION_UPPER ||
+                 node->token == MS_TOKEN_FUNCTION_LOWER ||
+                 node->token == MS_TOKEN_FUNCTION_INITCAP ||
+                 node->token == MS_TOKEN_FUNCTION_FIRSTCAP )
+        {
+            if( node->next && node->next->token == '(' )
+            {
+                int node_token = node->token;
+                msExprNode* subExpr = BuildExprTree(node->next->next, &node,
+                                                    nParenthesisLevel + 1);
+                if( subExpr == NULL )
+                {
+                    goto fail;
+                }
+                msExprNode* newNode = new msExprNode;
+                newNode->m_nToken = node_token;
+                if( subExpr->m_nToken == 0 )
+                {
+                    newNode->m_aoChildren = subExpr->m_aoChildren;
+                    subExpr->m_aoChildren.clear();
+                    delete subExpr;
+                }
+                else
+                {
+                    newNode->m_aoChildren.push_back(subExpr);
+                }
+                aoStackVal.push_back(newNode);
+                continue;
+            }
+            else
+                goto fail;
+        }
+        else if( node->token == MS_TOKEN_LITERAL_NUMBER ||
+                 node->token == MS_TOKEN_LITERAL_BOOLEAN )
+        {
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            newNode->m_dfVal = node->tokenval.dblval;
+            aoStackVal.push_back(newNode);
+        }
+        else if( node->token == MS_TOKEN_LITERAL_STRING )
+        {
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            newNode->m_osVal = node->tokenval.strval;
+            aoStackVal.push_back(newNode);
+        }
+        else if( node->token == MS_TOKEN_LITERAL_TIME )
+        {
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            newNode->m_tmVal = node->tokenval.tmval;
+            aoStackVal.push_back(newNode);
+        }
+        else if( node->token == MS_TOKEN_LITERAL_SHAPE )
+        {
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            char *wkt = msShapeToWKT(node->tokenval.shpval);
+            newNode->m_osVal = wkt;
+            msFree(wkt);
+            aoStackVal.push_back(newNode);
+        }
+        else if( node->token == MS_TOKEN_BINDING_DOUBLE ||
+                 node->token == MS_TOKEN_BINDING_INTEGER ||
+                 node->token == MS_TOKEN_BINDING_STRING ||
+                 node->token == MS_TOKEN_BINDING_TIME )
+        {
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            newNode->m_osVal = node->tokenval.bindval.item;
+            aoStackVal.push_back(newNode);
+        }
+        else
+        {
+            msExprNode* newNode = new msExprNode;
+            newNode->m_nToken = node->token;
+            aoStackVal.push_back(newNode);
+        }
+
+        node = node->next;
+    }
+
+    while( !aoStackOp.empty() )
+    {
+        msExprNode* val1 = NULL;
+        msExprNode* val2 = NULL;
+        msExprNode* newNode = NULL;
+        if (aoStackOp.back()->m_nToken != MS_TOKEN_LOGICAL_NOT)
+        {
+            if( aoStackVal.empty() )
+                goto fail;
+            val2 = aoStackVal.back();
+            aoStackVal.pop_back();
+        }
+        if( aoStackVal.empty() )
+            goto fail;
+        val1 = aoStackVal.back();
+        aoStackVal.pop_back();
+
+        newNode = new msExprNode;
+        newNode->m_nToken = aoStackOp.back()->m_nToken;
+        newNode->m_aoChildren.push_back(val1);
+        if( val2 )
+            newNode->m_aoChildren.push_back(val2);
+        aoStackVal.push_back(newNode);
+        delete aoStackOp.back();
+        aoStackOp.pop_back();
+    }
+
+    if( aoStackVal.size() == 1 )
+        poRet = aoStackVal.back();
+    else if( aoStackVal.size() > 1 )
+    {
+        poRet = new msExprNode;
+        poRet->m_aoChildren = aoStackVal;
+    }
+
+    if( pNodeNext )
+        *pNodeNext = node ? node->next : NULL;
+
+    return poRet;
+
+fail:
+    for( size_t i=0; i<aoStackOp.size(); ++i )
+        delete aoStackOp[i];
+    for( size_t i=0; i<aoStackVal.size(); ++i )
+        delete aoStackVal[i];
+    return NULL;
+}
+
+/**********************************************************************
+ *                 msOGRExtractTopSpatialFilter()
+ * 
+ * Recognize expressions like "Intersects([shape], wkt) == TRUE [AND ....]"
+ **********************************************************************/
+static int  msOGRExtractTopSpatialFilter( msOGRFileInfo *info,
+                                          const msExprNode* expr,
+                                          const msExprNode** pSpatialFilterNode )
+{
+  if( expr == NULL )
+      return MS_FALSE;
+
+  if( expr->m_nToken == MS_TOKEN_COMPARISON_EQ &&
+      expr->m_aoChildren.size() == 2 &&
+      expr->m_aoChildren[1]->m_nToken == MS_TOKEN_LITERAL_BOOLEAN &&
+      expr->m_aoChildren[1]->m_dfVal == 1.0 )
+  {
+      return msOGRExtractTopSpatialFilter(info, expr->m_aoChildren[0],
+                                          pSpatialFilterNode);
+  }
+
+  if( expr->m_nToken == MS_TOKEN_COMPARISON_INTERSECTS &&
+      expr->m_aoChildren.size() == 2 &&
+      expr->m_aoChildren[1]->m_nToken == MS_TOKEN_LITERAL_SHAPE )
+  {
+        if( info->rect_is_defined )
+        {
+            // Several intersects...
+            *pSpatialFilterNode = NULL;
+            info->rect_is_defined = MS_FALSE;
+            return MS_FALSE;
+        }
+        OGRGeometryH hSpatialFilter = NULL;
+        char* wkt = const_cast<char*>(expr->m_aoChildren[1]->m_osVal.c_str());
+        OGRErr e = OGR_G_CreateFromWkt(&wkt, NULL, &hSpatialFilter);
+        if (e == OGRERR_NONE) {
+            OGREnvelope env;
+            OGR_G_GetEnvelope(hSpatialFilter, &env);
+            info->rect.minx = env.MinX;
+            info->rect.miny = env.MinY;
+            info->rect.maxx = env.MaxX;
+            info->rect.maxy = env.MaxY;
+            info->rect_is_defined = true;
+            *pSpatialFilterNode = expr;
+            OGR_G_DestroyGeometry(hSpatialFilter);
+            return MS_TRUE;
+        }
+        return MS_FALSE;
+  }
+
+  if( expr->m_nToken == MS_TOKEN_LOGICAL_AND &&
+      expr->m_aoChildren.size() == 2 )
+  {
+      return msOGRExtractTopSpatialFilter(info, expr->m_aoChildren[0],
+                                          pSpatialFilterNode) &&
+             msOGRExtractTopSpatialFilter(info, expr->m_aoChildren[1],
+                                          pSpatialFilterNode);
+  }
+
+  return MS_TRUE;
+}
+
+/**********************************************************************
+ *                 msOGRTranslatePartialMSExpressionToOGRSQL()
+ *
+ * Tries to partially translate a mapserver expression to SQL
+ **********************************************************************/
+
+static std::string msOGRGetTokenText(int nToken)
+{
+    switch( nToken )
+    {
+        case '*':
+        case '+':
+        case '-':
+        case '/':
+        case '%':
+            return std::string(1, static_cast<char>(nToken));
+
+        case MS_TOKEN_COMPARISON_GE: return ">=";
+        case MS_TOKEN_COMPARISON_GT: return ">";
+        case MS_TOKEN_COMPARISON_LE: return "<=";
+        case MS_TOKEN_COMPARISON_LT: return "<";
+        case MS_TOKEN_COMPARISON_EQ: return "=";
+        case MS_TOKEN_COMPARISON_NE: return "!=";
+        case MS_TOKEN_COMPARISON_LIKE: return "LIKE";
+
+        default:
+            return std::string();
+    }
+}
+
+static std::string msOGRTranslatePartialInternal(layerObj* layer,
+                                                 const msExprNode* expr,
+                                                 const msExprNode* spatialFilterNode,
+                                                 bool& bPartialFilter)
+{
+    switch( expr->m_nToken )
+    {
+        case MS_TOKEN_LOGICAL_NOT:
+        {
+            std::string osTmp(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[0], spatialFilterNode, bPartialFilter ));
+            if( osTmp.empty() )
+                return std::string();
+            return "(NOT " + osTmp + ")";
+        }
+
+        case MS_TOKEN_LOGICAL_AND:
+        {
+            // We can deal with partially translated children
+            std::string osTmp1(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[0], spatialFilterNode, bPartialFilter ));
+            std::string osTmp2(msOGRTranslatePartialInternal( 
+                layer, expr->m_aoChildren[1], spatialFilterNode, bPartialFilter ));
+            if( !osTmp1.empty() && !osTmp2.empty() )
+            {
+                return "(" + osTmp1 + " AND " + osTmp2 + ")";
+            }
+            else if( !osTmp1.empty() )
+                return osTmp1;
+            else
+                return osTmp2;
+        }
+
+        case MS_TOKEN_LOGICAL_OR:
+        {
+            // We can NOT deal with partially translated children
+            std::string osTmp1(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[0], spatialFilterNode, bPartialFilter ));
+            std::string osTmp2(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[1], spatialFilterNode, bPartialFilter ));
+            if( !osTmp1.empty() && !osTmp2.empty() )
+            {
+                return "(" + osTmp1 + " OR " + osTmp2 + ")";
+            }
+            else
+                return std::string();
+        }
+
+        case '*':
+        case '+':
+        case '-':
+        case '/':
+        case '%':
+        case MS_TOKEN_COMPARISON_GE:
+        case MS_TOKEN_COMPARISON_GT:
+        case MS_TOKEN_COMPARISON_LE:
+        case MS_TOKEN_COMPARISON_LT:
+        case MS_TOKEN_COMPARISON_EQ:
+        case MS_TOKEN_COMPARISON_NE:
+        {
+            std::string osTmp1(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[0], spatialFilterNode, bPartialFilter ));
+            std::string osTmp2(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[1], spatialFilterNode, bPartialFilter ));
+            if( !osTmp1.empty() && !osTmp2.empty() )
+            {
+                if( expr->m_nToken == MS_TOKEN_COMPARISON_EQ &&
+                    osTmp2 == "'_MAPSERVER_NULL_'" )
+                {
+                    return "(" + osTmp1 + " IS NULL )";
+                }
+                if( expr->m_aoChildren[1]->m_nToken == MS_TOKEN_LITERAL_STRING )
+                {
+                    char md_item_name[256];
+                    snprintf( md_item_name, sizeof(md_item_name), "gml_%s_type",
+                              expr->m_aoChildren[0]->m_osVal.c_str() );
+                    const char* type =
+                        msLookupHashTable(&(layer->metadata), md_item_name);
+                    // Cast if needed (or unsure)
+                    if( type == NULL || !EQUAL(type, "Character") )
+                    {
+                        osTmp1 = "CAST(" + osTmp1 + " AS CHARACTER(4096))";
+                    }
+                }
+                return "(" + osTmp1 + " " + msOGRGetTokenText(expr->m_nToken) +
+                       " " + osTmp2 + ")";
+            }
+            else
+                return std::string();
+        }
+
+        case MS_TOKEN_COMPARISON_RE:
+        {
+            std::string osTmp1(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[0], spatialFilterNode, bPartialFilter ));
+            if( expr->m_aoChildren[1]->m_nToken != MS_TOKEN_LITERAL_STRING )
+            {
+                return std::string();
+            }
+            std::string osRE("'");
+            const size_t nSize = expr->m_aoChildren[1]->m_osVal.size();
+            bool bHasUsedEscape = false;
+            for( size_t i=0; i<nSize;i++ )
+            {
+                if( i == 0 && expr->m_aoChildren[1]->m_osVal[i] == '^' )
+                    continue;
+                if( expr->m_aoChildren[1]->m_osVal[i] == '.' )
+                {
+                    if( i+1<nSize &&
+                        expr->m_aoChildren[1]->m_osVal[i+1] == '*' )
+                    {
+                        osRE += "%";
+                        i++;
+                    }
+                    else
+                    {
+                        osRE += "_";
+                    }
+                }
+                else if( expr->m_aoChildren[1]->m_osVal[i] == '\\' &&
+                         i+1<nSize )
+                {
+                    bHasUsedEscape = true;
+                    osRE += 'X';
+                    osRE += expr->m_aoChildren[1]->m_osVal[i+1];
+                    i++;
+                }
+                else if( expr->m_aoChildren[1]->m_osVal[i] == 'X' ||
+                         expr->m_aoChildren[1]->m_osVal[i] == '%' ||
+                         expr->m_aoChildren[1]->m_osVal[i] == '_' )
+                {
+                    bHasUsedEscape = true;
+                    osRE += 'X';
+                    osRE += expr->m_aoChildren[1]->m_osVal[i];
+                }
+                else
+                {
+                    osRE += expr->m_aoChildren[1]->m_osVal[i];
+                }
+            }
+            osRE += "'";
+            char md_item_name[256];
+            snprintf( md_item_name, sizeof(md_item_name), "gml_%s_type",
+                        expr->m_aoChildren[0]->m_osVal.c_str() );
+            const char* type =
+                        msLookupHashTable(&(layer->metadata), md_item_name);
+            // Cast if needed (or unsure)
+            if( type == NULL || !EQUAL(type, "Character") )
+            {
+                osTmp1 = "CAST(" + osTmp1 + " AS CHARACTER(4096))";
+            }
+            std::string osRet( "(" + osTmp1 + " LIKE " + osRE );
+            if( bHasUsedEscape )
+                osRet += " ESCAPE 'X'";
+            osRet += ")";
+            return osRet;
+        }
+
+        case MS_TOKEN_COMPARISON_IN:
+        {
+            std::string osTmp1(msOGRTranslatePartialInternal(
+                layer, expr->m_aoChildren[0], spatialFilterNode, bPartialFilter ));
+            std::string osRet = "(" + osTmp1 + " IN (";
+            for( size_t i=0; i< expr->m_aoChildren[1]->m_aoChildren.size(); ++i )
+            {
+                if( i > 0 )
+                    osRet += ", ";
+                osRet += msOGRTranslatePartialInternal(
+                            layer, expr->m_aoChildren[1]->m_aoChildren[i],
+                            spatialFilterNode, bPartialFilter );
+            }
+            osRet += ")";
+            return osRet;
+        }
+
+        case MS_TOKEN_LITERAL_NUMBER:
+        case MS_TOKEN_LITERAL_BOOLEAN:
+        {
+            return std::string(CPLSPrintf("%.18g", expr->m_dfVal));
+        }
+
+        case MS_TOKEN_LITERAL_STRING:
+        {
+            char *stresc = msOGREscapeSQLParam(layer, expr->m_osVal.c_str());
+            std::string osRet("'" + std::string(stresc) + "'");
+            msFree(stresc);
+            return osRet;
+        }
+
+        case MS_TOKEN_LITERAL_TIME:
+        {
+#ifdef notdef
+            // Breaks tests in msautotest/wxs/wfs_time_ogr.map
+            return std::string(CPLSPrintf("'%04d/%02d/%02d %02d:%02d:%02d'",
+                     expr->m_tmVal.tm_year+1900,
+                     expr->m_tmVal.tm_mon+1,
+                     expr->m_tmVal.tm_mday,
+                     expr->m_tmVal.tm_hour,
+                     expr->m_tmVal.tm_min,
+                     expr->m_tmVal.tm_sec));
+#endif
+            return std::string();
+        }
+
+        case MS_TOKEN_BINDING_DOUBLE:
+        case MS_TOKEN_BINDING_INTEGER:
+        case MS_TOKEN_BINDING_STRING:
+        case MS_TOKEN_BINDING_TIME:
+        {
+            char* pszTmp = msOGRGetQuotedItem(layer, expr->m_osVal.c_str());
+            std::string osRet(pszTmp);
+            msFree(pszTmp);
+            return osRet;
+        }
+
+        case MS_TOKEN_COMPARISON_INTERSECTS:
+        {
+            if( expr != spatialFilterNode )
+                bPartialFilter = true;
+            return std::string();
+        }
+
+        default:
+        {
+            bPartialFilter = true;
+            return std::string();
+        }
+    }
+}
+
 #endif /* def USE_OGR */
 
 /* ==================================================================
@@ -2976,25 +3732,61 @@ static int msOGRTranslateMsExpressionToOGRSQL(layerObj* layer,
 #ifdef USE_OGR
     msOGRFileInfo *info = (msOGRFileInfo *)layer->layerinfo;
 
+    msFree(layer->filter.native_string);
+    layer->filter.native_string = NULL;
+
+    msFree(info->pszWHERE);
+    info->pszWHERE = NULL;
+
     // reasons to not produce native string: not simple layer, or an explicit deny
     char *do_this = msLayerGetProcessingKey(layer, "NATIVE_SQL"); // default is YES
     if (do_this && strcmp(do_this, "NO") == 0) {
         return MS_SUCCESS;
     }
 
+    tokenListNodeObjPtr node = psFilter->tokens;
+    msExprNode* expr = BuildExprTree(node, NULL, 0);
+    info->rect_is_defined = MS_FALSE;
+    const msExprNode* spatialFilterNode = NULL;
+    if( expr )
+        msOGRExtractTopSpatialFilter( info, expr, &spatialFilterNode );
+
     // more reasons to not produce native string: not a recognized driver
-    if (!info->dialect) {
+    if (!info->dialect)
+    {
+        // in which case we might still want to try to get a partial WHERE clause
+        if( filteritem == NULL && expr )
+        {
+            bool bPartialFilter = false;
+            std::string osSQL( msOGRTranslatePartialInternal(layer, expr,
+                                                             spatialFilterNode,
+                                                             bPartialFilter) );
+            if( !osSQL.empty() )
+            {
+                info->pszWHERE = msStrdup(osSQL.c_str());
+                if( bPartialFilter )
+                {
+                    msDebug("Full filter has only been partially "
+                            "translated to OGR filter %s\n",
+                            info->pszWHERE);
+                }
+            }
+            else if( bPartialFilter )
+            {
+                msDebug("Filter could not be translated to OGR filter\n");
+            }
+        }
+        delete expr;
         return MS_SUCCESS;
     }
 
     char *sql = NULL;
 
-    tokenListNodeObjPtr node = psFilter->tokens;
-    // node may be NULL if layer->filter.string != NULL and layer->filteritem != NULL
+    // node may be NULL if layer->filter.string != NULL and filteritem != NULL
     // this is simple filter but string is regex
-    if (node == NULL && layer->filteritem != NULL && layer->filter.string != NULL) {
+    if (node == NULL && filteritem != NULL && layer->filter.string != NULL) {
         sql = msStringConcatenate(sql, "\"");
-        sql = msStringConcatenate(sql, layer->filteritem);
+        sql = msStringConcatenate(sql, filteritem);
         sql = msStringConcatenate(sql, "\"");
         if (EQUAL(info->dialect, "PostgreSQL") ) {
             sql = msStringConcatenate(sql, " ~ ");
@@ -3005,54 +3797,7 @@ static int msOGRTranslateMsExpressionToOGRSQL(layerObj* layer,
         sql = msStringConcatenate(sql, layer->filter.string);
         sql = msStringConcatenate(sql, "'");
     }
-    // test if there is a "top" level intersects (see FLTValidForBBoxFilter) for a bounding box
-    if (node != NULL) {
-        int is_top_level_and = 0;
-        int has_bounding_box = 0;
-        tokenListNodeObjPtr bounding_box_node = NULL;
-        tokenListNodeObjPtr x = psFilter->tokens;
-        int d = 0;
-        while (x != NULL) {
-            if (x->token == '(') d++;
-            if (x->token == ')') d--;
-            if (x->token == MS_TOKEN_COMPARISON_INTERSECTS && d == 0) {
-                has_bounding_box = 1;
-                bounding_box_node = x;
-            }
-            if (d == 1) {
-                if (x->token == MS_TOKEN_COMPARISON_INTERSECTS)
-                    bounding_box_node = x;
-                else if (x->token == MS_TOKEN_LOGICAL_AND)
-                    is_top_level_and = 1;
-            }
-            if (is_top_level_and && bounding_box_node)
-                has_bounding_box = 1;
-            x = x->next;
-        }
-        if (has_bounding_box) {
-            x = bounding_box_node;
-            x = x->next; // skip fct
-            x = x->next; // skip (
-            x = x->next; // skip field name
-            x = x->next; // skip ,
-            char *a = msOGRGetToken(layer, &x);
-            // skip "ST_GeomFromText(' from a
-            char *wkt = a+17;
-            OGRGeometryH hSpatialFilter;
-            OGRErr e = OGR_G_CreateFromWkt(&wkt, NULL, &hSpatialFilter);
-            msFree(a);
-            if (e == OGRERR_NONE) {
-                OGREnvelope env;
-                OGR_G_GetEnvelope(hSpatialFilter, &env);
-                info->rect.minx = env.MinX;
-                info->rect.miny = env.MinY;
-                info->rect.maxx = env.MaxX;
-                info->rect.maxy = env.MaxY;
-                info->rect_is_defined = true;
-                OGR_G_DestroyGeometry(hSpatialFilter);
-            }
-        }
-    }
+
     while (node != NULL) {
 
         if (node->next && node->next->token == MS_TOKEN_COMPARISON_IEQ) {
@@ -3146,12 +3891,38 @@ static int msOGRTranslateMsExpressionToOGRSQL(layerObj* layer,
     }
 
     layer->filter.native_string = sql;
+    delete expr;
     return MS_SUCCESS;
 fail:
     // error producing native string
-    fprintf(stderr, "Note: Error parsing token list, could produce only: %s\n", sql);
+    msDebug("Note: Error parsing token list, could produce only: %s. Trying in partial mode\n", sql);
     msFree(sql);
-    return MS_FAILURE;
+
+    // in which case we might still want to try to get a partial WHERE clause
+    if( expr )
+    {
+        bool bPartialFilter = false;
+        std::string osSQL( msOGRTranslatePartialInternal(layer, expr,
+                                                            spatialFilterNode,
+                                                            bPartialFilter) );
+        if( !osSQL.empty() )
+        {
+            info->pszWHERE = msStrdup(osSQL.c_str());
+            if( bPartialFilter )
+            {
+                msDebug("Full filter has only been partially "
+                        "translated to OGR filter %s\n",
+                        info->pszWHERE);
+            }
+        }
+        else if( bPartialFilter )
+        {
+            msDebug("Filter could not be translated to OGR filter\n");
+        }
+    }
+    delete expr;
+
+    return MS_SUCCESS;
 #else
   /* ------------------------------------------------------------------
    * OGR Support not included...
@@ -3575,7 +4346,16 @@ static int msOGRLayerInitItemInfo(layerObj *layer)
         itemindexes[i] = MSOGR_SYMBOLPARAMINDEX 
                           + atoi(layer->items[i] + MSOGR_SYMBOLPARAMNAMELEN);
     else
+    {
       itemindexes[i] = OGR_FD_GetFieldIndex( hDefn, layer->items[i] );
+      if( itemindexes[i] == -1 )
+      {
+          if( EQUAL( layer->items[i], OGR_L_GetFIDColumn( psInfo->hLayer ) ) )
+          {
+              itemindexes[i] = MSOGR_FID_INDEX;
+          }
+      }
+    }
     if(itemindexes[i] == -1) {
       msSetError(MS_OGRERR,
                  "Invalid Field name: %s",

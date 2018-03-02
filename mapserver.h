@@ -1123,6 +1123,16 @@ extern "C" {
 
     labelLeaderObj *leader;
   };
+  
+#ifdef SWIG
+#ifdef	__cplusplus
+extern "C" {
+#endif
+typedef struct labelObj labelObj;
+#ifdef	__cplusplus
+}
+#endif
+#endif
 
 #ifndef SWIG
   /* lightweight structure containing information to render a labelObj */
@@ -2493,6 +2503,8 @@ void msPopulateTextSymbolForLabelAndString(textSymbolObj *ts, labelObj *l, char 
   MS_DLL_EXPORT int msUnionLayerInitializeVirtualTable(layerObj *layer);
   MS_DLL_EXPORT void msPluginFreeVirtualTableFactory(void);
 
+  void msUVRASTERLayerUseMapExtentAndProjectionForNextWhichShapes(layerObj* layer, mapObj* map);
+
   /* ==================================================================== */
   /*      Prototypes for functions in mapdraw.c                           */
   /* ==================================================================== */
@@ -2589,6 +2601,7 @@ void msPopulateTextSymbolForLabelAndString(textSymbolObj *ts, labelObj *l, char 
   MS_DLL_EXPORT int msGetClass(layerObj *layer, colorObj *color, int colormap_index);
   MS_DLL_EXPORT int msGetClass_FloatRGB(layerObj *layer, float fValue,
                                         int red, int green, int blue );
+  int msGetClass_FloatRGB_WithFirstClassToTry(layerObj *layer, float fValue, int red, int green, int blue, int firstClassToTry );
 
   /* in mapdrawgdal.c */
   MS_DLL_EXPORT int msDrawRasterLayerGDAL(mapObj *map, layerObj *layer, imageObj *image, rasterBufferObj *rb, void *hDSVoid );

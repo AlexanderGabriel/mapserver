@@ -38,6 +38,7 @@
 
 #include "mapserver.h"
 #include "maptime.h" 
+#include "mapows.h"
 #include <assert.h>
 
 
@@ -399,8 +400,10 @@ static int msSplitData( char *data, char **geometry_column_name, char **table_na
       break; /* stop on spaces */
     /* double the size of the table_name array if necessary */
     if (i == table_name_size) {
+      size_t tgt_offset = tgt - *table_name;
       table_name_size *= 2;
       *table_name = (char *) realloc(*table_name,sizeof(char *) * table_name_size);
+      tgt = *table_name + tgt_offset;
     }
     *tgt = *src;
   }
@@ -1704,7 +1707,7 @@ static int osGetOrdinates(msOracleSpatialDataHandler *dthand, msOracleSpatialHan
   } /* end of not-null-object if */
 
   if (compound_type){
-    if(gtype == 2003)
+    if (gtype == 2003 || gtype == 2007)
       shape->type = MS_SHAPE_POLYGON;
     msFreeShape(&newshape);
   }
@@ -2016,7 +2019,7 @@ int msOracleSpatialLayerWhichShapes( layerObj *layer, rectObj rect, int isQuery)
   /* define SQL query */
   for( i=0; i < layer->numitems; ++i ) {
       
-      snprintf( query_str + strlen(query_str), sizeof(query_str)-strlen(query_str), "%s, ", layer->items[i] );
+      snprintf( query_str + strlen(query_str), sizeof(query_str)-strlen(query_str), "\"%s\", ", layer->items[i] );
   }
 
   /*we add the uniqueid if it was not part of the current item list*/
@@ -3953,7 +3956,7 @@ PluginInitializeVirtualTable(layerVTableObj* vtable, layerObj *layer)
   assert(layer != NULL);
   assert(vtable != NULL);
 
-  layer->vtable->LayerTranslateFilter = msOracleSpatialLayerTranslateFilter;
+  vtable->LayerTranslateFilter = msOracleSpatialLayerTranslateFilter;
 
 
   vtable->LayerInitItemInfo = msOracleSpatialLayerInitItemInfo;
@@ -3972,7 +3975,7 @@ PluginInitializeVirtualTable(layerVTableObj* vtable, layerObj *layer)
   vtable->LayerApplyFilterToLayer = msLayerApplyCondSQLFilterToLayer;
   vtable->LayerSetTimeFilter = msLayerMakeBackticsTimeFilter;
   //vtable->LayerSetTimeFilter = msOracleSpatialLayerSetTimeFilter;
-  vtable->LayerEscapePropertyName = msOracleSpatialEscapePropertyName;
+  //vtable->LayerEscapePropertyName = msOracleSpatialEscapePropertyName;
   /* layer->vtable->LayerGetNumFeatures, use default */
   /* layer->vtable->LayerGetAutoProjection = msOracleSpatialLayerGetAutoProjection; Disabled until tested */
   vtable->LayerEnablePaging = msOracleSpatialEnablePaging;
@@ -4006,7 +4009,7 @@ int msOracleSpatialLayerInitializeVirtualTable(layerObj *layer)
   layer->vtable->LayerApplyFilterToLayer = msLayerApplyCondSQLFilterToLayer;
   layer->vtable->LayerSetTimeFilter = msLayerMakeBackticsTimeFilter;
   //layer->vtable->LayerSetTimeFilter = msOracleSpatialLayerSetTimeFilter;
-  layer->vtable->LayerEscapePropertyName = msOracleSpatialEscapePropertyName;
+  //layer->vtable->LayerEscapePropertyName = msOracleSpatialEscapePropertyName;
   /* layer->vtable->LayerCreateItems, use default */
   /* layer->vtable->LayerGetNumFeatures, use default */
   /* layer->vtable->LayerGetAutoProjection = msOracleSpatialLayerGetAutoProjection; Disabled until tested */

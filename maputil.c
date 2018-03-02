@@ -1759,6 +1759,8 @@ shapeObj *msOffsetCurve(shapeObj *p, double offset)
    if that is the case.*/
   if(ret)
     return ret;
+  /* clear error raised by geos in this case */
+  msResetErrorList();
 #endif
   /*
   ** For offset corner point calculation 1/sin() is used
@@ -2257,6 +2259,14 @@ int msExtentsOverlap(mapObj *map, layerObj *layer)
   ** in the same projection. */
   if( ! (layer->projection.numargs > 0) )
     return msRectOverlap( &(map->extent), &(layer->extent) );
+
+  /* In the case where map and layer projections are identical, and the */
+  /* bounding boxes don't cross the dateline, do simple rectangle comparison */
+  if( map->extent.minx < map->extent.maxx &&
+      layer->extent.minx < layer->extent.maxx &&
+      !msProjectionsDiffer(&(map->projection), &(layer->projection)) ) {
+    return msRectOverlap( &(map->extent), &(layer->extent) );
+  }
 
   /* We need to transform our rectangles for comparison,
   ** so we will work with copies and leave the originals intact. */

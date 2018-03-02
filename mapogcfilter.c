@@ -164,7 +164,8 @@ char *FLTGetExpressionForValuesRanges(layerObj *lp, const char *item, const char
       if (paszElements && numelements > 0) {
         if (forcecharcter)
           bIscharacter = MS_TRUE;
-        bIscharacter= !FLTIsNumeric(paszElements[0]);
+        else
+          bIscharacter= !FLTIsNumeric(paszElements[0]);
 
         pszTmpExpression = msStringConcatenate(pszTmpExpression, "(");
         for (i=0; i<numelements; i++) {
@@ -673,7 +674,7 @@ int FLTLayerApplyPlainFilterToLayer(FilterEncodingNode *psNode, mapObj *map,
 
     pszUseDefaultExtent = msOWSLookupMetadata(&(lp->metadata), "F",
                                               "use_default_extent_for_getfeature");
-    if( pszUseDefaultExtent && CSLTestBoolean(pszUseDefaultExtent) &&
+    if( pszUseDefaultExtent && !CSLTestBoolean(pszUseDefaultExtent) &&
         lp->connectiontype == MS_OGR )
     {
         const rectObj rectInvalid = MS_INIT_INVALID_RECT;
@@ -836,7 +837,7 @@ static int FLTIsGeometryFilterNodeType(int eType)
 /************************************************************************/
 /*                          FLTFreeFilterEncodingNode                   */
 /*                                                                      */
-/*      recursive freeing of Filer Encoding nodes.                      */
+/*      recursive freeing of Filter Encoding nodes.                      */
 /************************************************************************/
 void FLTFreeFilterEncodingNode(FilterEncodingNode *psFilterNode)
 {
@@ -883,7 +884,7 @@ void FLTFreeFilterEncodingNode(FilterEncodingNode *psFilterNode)
 /************************************************************************/
 /*                         FLTCreateFilterEncodingNode                  */
 /*                                                                      */
-/*      return a FilerEncoding node.                                    */
+/*      return a FilterEncoding node.                                    */
 /************************************************************************/
 FilterEncodingNode *FLTCreateFilterEncodingNode(void)
 {
@@ -1008,8 +1009,8 @@ static CPLXMLNode* FLTGetNextSibblingNode(CPLXMLNode* psXMLNode)
 /************************************************************************/
 /*                           FLTInsertElementInNode                     */
 /*                                                                      */
-/*      Utility function to parse an XML node and transfter the         */
-/*      contennts into the Filer Encoding node structure.               */
+/*      Utility function to parse an XML node and transfer the          */
+/*      contents into the Filter Encoding node structure.               */
 /************************************************************************/
 void FLTInsertElementInNode(FilterEncodingNode *psFilterNode,
                             CPLXMLNode *psXMLNode)
@@ -2075,7 +2076,7 @@ const char* FLTGetDuring(FilterEncodingNode *psFilterNode, const char** ppszTime
 /************************************************************************/
 /*                          GetMapserverExpression                      */
 /*                                                                      */
-/*      Return a mapserver expression base on the Filer encoding nodes. */
+/*      Return a mapserver expression base on the Filter encoding nodes. */
 /************************************************************************/
 char *FLTGetMapserverExpression(FilterEncodingNode *psFilterNode, layerObj *lp)
 {
@@ -3004,6 +3005,8 @@ char *FLTGetIsLikeComparisonExpression(FilterEncodingNode *psFilterNode)
 
   pszValue = psFilterNode->psRightNode->pszValue;
   nLength = strlen(pszValue);
+  if( 1 + 2 * nLength + 1 + 1 >= sizeof(szTmp) )
+      return NULL;
 
   iTmp =0;
   if (nLength > 0 && pszValue[0] != pszWild[0] &&

@@ -55,6 +55,7 @@ imageObj *msPrepareImage(mapObj *map, int allow_nonsquare)
     return(NULL);
   }
 
+  msFreeLabelCache(&(map->labelcache));
   msInitLabelCache(&(map->labelcache)); /* this clears any previously allocated cache */
 
   /* clear any previously created mask layer images */
@@ -219,7 +220,8 @@ imageObj *msDrawMap(mapObj *map, int querymap)
 #if defined(USE_WMS_LYR) || defined(USE_WFS_LYR)
   enum MS_CONNECTION_TYPE lastconnectiontype;
   httpRequestObj *pasOWSReqInfo=NULL;
-  int numOWSLayers=0, numOWSRequests=0;
+  int numOWSLayers=0;
+  int numOWSRequests=0;
   wmsParamsObj sLastWMSParams;
 #endif
 
@@ -255,30 +257,43 @@ imageObj *msDrawMap(mapObj *map, int querymap)
    */
   numOWSLayers=0;
   for(i=0; i<map->numlayers; i++) {
-    if(map->layerorder[i] != -1 &&
-        msLayerIsVisible(map, GET_LAYER(map,map->layerorder[i])))
+      if(map->layerorder[i] == -1 )
+        continue;
+
+      lp = GET_LAYER(map,map->layerorder[i]);
+      if( lp->connectiontype != MS_WMS &&
+          lp->connectiontype != MS_WFS ) {
+        continue;
+      }
       numOWSLayers++;
   }
 
-
   if (numOWSLayers > 0) {
+
     /* Alloc and init pasOWSReqInfo...
      */
-    pasOWSReqInfo = (httpRequestObj *)malloc((numOWSLayers+1)*sizeof(httpRequestObj));
+    pasOWSReqInfo = (httpRequestObj *)malloc(numOWSLayers*sizeof(httpRequestObj));
     if (pasOWSReqInfo == NULL) {
       msSetError(MS_MEMERR, "Allocation of httpRequestObj failed.", "msDrawMap()");
       return NULL;
     }
-    msHTTPInitRequestObj(pasOWSReqInfo, numOWSLayers+1);
+    msHTTPInitRequestObj(pasOWSReqInfo, numOWSLayers);
     msInitWmsParamsObj(&sLastWMSParams);
 
     /* Pre-download all WMS/WFS layers in parallel before starting to draw map */
     lastconnectiontype = MS_SHAPEFILE;
-    for(i=0; numOWSLayers && i<map->numlayers; i++) {
-      if(map->layerorder[i] == -1 || !msLayerIsVisible(map, GET_LAYER(map,map->layerorder[i])))
+    for(i=0; i<map->numlayers; i++) {
+      if(map->layerorder[i] == -1 )
         continue;
 
       lp = GET_LAYER(map,map->layerorder[i]);
+      if( lp->connectiontype != MS_WMS &&
+          lp->connectiontype != MS_WFS ) {
+        continue;
+      }
+
+      if( !msLayerIsVisible(map, lp) )
+        continue;
 
 #ifdef USE_WMS_LYR
       if(lp->connectiontype == MS_WMS) {
@@ -305,9 +320,7 @@ imageObj *msDrawMap(mapObj *map, int querymap)
       lastconnectiontype = lp->connectiontype;
     }
 
-#ifdef USE_WMS_LYR
     msFreeWmsParamsObj(&sLastWMSParams);
-#endif
   } /* if numOWSLayers > 0 */
 
   if(numOWSRequests && msOWSExecuteRequests(pasOWSReqInfo, numOWSRequests, map, MS_TRUE) == MS_FAILURE) {
@@ -581,6 +594,25 @@ int msLayerIsVisible(mapObj *map, layerObj *layer)
   if(layer->type == MS_LAYER_QUERY || layer->type == MS_LAYER_TILEINDEX) return(MS_FALSE);
   if((layer->status != MS_ON) && (layer->status != MS_DEFAULT)) return(MS_FALSE);
 
+  /* Do comparisons of layer scale vs map scale now, since msExtentsOverlap() */
+  /* can be slow */
+  if(map->scaledenom > 0) {
+
+    /* layer scale boundaries should be checked first */
+    if((layer->maxscaledenom > 0) && (map->scaledenom > layer->maxscaledenom)) {
+      if( layer->debug >= MS_DEBUGLEVEL_V ) {
+        msDebug("msLayerIsVisible(): Skipping layer (%s) because LAYER.MAXSCALE is too small for this MAP scale\n", layer->name);
+      }
+      return(MS_FALSE);
+    }
+    if(/*(layer->minscaledenom > 0) &&*/ (map->scaledenom <= layer->minscaledenom)) {
+      if( layer->debug >= MS_DEBUGLEVEL_V ) {
+        msDebug("msLayerIsVisible(): Skipping layer (%s) because LAYER.MINSCALE is too large for this MAP scale\n", layer->name);
+      }
+      return(MS_FALSE);
+    }
+  }
+
   /* Only return MS_FALSE if it is definitely false. Sometimes it will return MS_UNKNOWN, which we
   ** consider true, for this use case (it might be visible, try and draw it, see what happens). */
   if ( msExtentsOverlap(map, layer) == MS_FALSE ) {
@@ -594,20 +626,6 @@ int msLayerIsVisible(mapObj *map, layerObj *layer)
 
   if(map->scaledenom > 0) {
 
-    /* layer scale boundaries should be checked first */
-    if((layer->maxscaledenom > 0) && (map->scaledenom > layer->maxscaledenom)) {
-      if( layer->debug >= MS_DEBUGLEVEL_V ) {
-        msDebug("msLayerIsVisible(): Skipping layer (%s) because LAYER.MAXSCALE is too small for this MAP scale\n", layer->name);
-      }
-      return(MS_FALSE);
-    }
-    if((layer->minscaledenom > 0) && (map->scaledenom <= layer->minscaledenom)) {
-      if( layer->debug >= MS_DEBUGLEVEL_V ) {
-        msDebug("msLayerIsVisible(): Skipping layer (%s) because LAYER.MINSCALE is too large for this MAP scale\n", layer->name);
-      }
-      return(MS_FALSE);
-    }
-  
     /* now check class scale boundaries (all layers *must* pass these tests) */
     if(layer->numclasses > 0) {
       for(i=0; i<layer->numclasses; i++) {
@@ -938,8 +956,110 @@ int msDrawVectorLayer(mapObj *map, layerObj *layer, imageObj *image)
   if(layer->transform == MS_TRUE) {
     searchrect = map->extent;
 #ifdef USE_PROJ
-    if((map->projection.numargs > 0) && (layer->projection.numargs > 0))
-      msProjectRect(&map->projection, &layer->projection, &searchrect); /* project the searchrect to source coords */
+    if((map->projection.numargs > 0) && (layer->projection.numargs > 0)) {
+      int bDone = MS_FALSE;
+
+#ifdef USE_GDAL
+      if( layer->connectiontype == MS_UVRASTER )
+      {
+          /* Nasty hack to make msUVRASTERLayerWhichShapes() aware that the */
+          /* original area of interest is (map->extent, map->projection)... */
+          /* Useful when dealin with UVRASTER that extend beyond 180 deg */
+          msUVRASTERLayerUseMapExtentAndProjectionForNextWhichShapes( layer, map );
+      }
+#endif
+
+      /* For UVRaster, it is important that the searchrect is not too large */
+      /* to avoid insufficient intermediate raster resolution, which could */
+      /* happen if we use the default code path, given potential reprojection */
+      /* issues when using a map extent that is not in the validity area of */
+      /* the layer projection. */
+      if( layer->connectiontype == MS_UVRASTER &&
+          !layer->projection.gt.need_geotransform &&
+          !(pj_is_latlong(map->projection.proj) &&
+            pj_is_latlong(layer->projection.proj)) ) {
+        rectObj layer_ori_extent;
+
+        if( msLayerGetExtent(layer, &layer_ori_extent) == MS_SUCCESS ) {
+          projectionObj map_proj;
+
+          double map_extent_minx = map->extent.minx;
+          double map_extent_miny = map->extent.miny;
+          double map_extent_maxx = map->extent.maxx;
+          double map_extent_maxy = map->extent.maxy;
+          rectObj layer_extent = layer_ori_extent;
+
+          /* Create a variant of map->projection without geotransform for */
+          /* conveniency */
+          msInitProjection(&map_proj);
+          msCopyProjection(&map_proj, &map->projection);
+          map_proj.gt.need_geotransform = MS_FALSE;
+          if( map->projection.gt.need_geotransform ) {
+            map_extent_minx = map->projection.gt.geotransform[0]
+                + map->projection.gt.geotransform[1] * map->extent.minx
+                + map->projection.gt.geotransform[2] * map->extent.miny;
+            map_extent_miny = map->projection.gt.geotransform[3]
+                + map->projection.gt.geotransform[4] * map->extent.minx
+                + map->projection.gt.geotransform[5] * map->extent.miny;
+            map_extent_maxx = map->projection.gt.geotransform[0]
+                + map->projection.gt.geotransform[1] * map->extent.maxx
+                + map->projection.gt.geotransform[2] * map->extent.maxy;
+            map_extent_maxy = map->projection.gt.geotransform[3]
+                + map->projection.gt.geotransform[4] * map->extent.maxx
+                + map->projection.gt.geotransform[5] * map->extent.maxy;
+          }
+
+          /* Reproject layer extent to map projection */
+          msProjectRect(&layer->projection, &map_proj, &layer_extent);
+
+          if( layer_extent.minx <= map_extent_minx &&
+              layer_extent.miny <= map_extent_miny &&
+              layer_extent.maxx >= map_extent_maxx &&
+              layer_extent.maxy >= map_extent_maxy ) {
+            /* do nothing special if area to map is inside layer extent */
+          }
+          else {
+            if( layer_extent.minx >= map_extent_minx &&
+                layer_extent.maxx <= map_extent_maxx &&
+                layer_extent.miny >= map_extent_miny &&
+                layer_extent.maxy <= map_extent_maxy ) {
+              /* if the area to map is larger than the layer extent, then */
+              /* use full layer extent and add some margin to reflect the */
+              /* proportion of the useful area over the requested bbox */
+              double extra_x =
+                (map_extent_maxx - map_extent_minx) /
+                  (layer_extent.maxx - layer_extent.minx) *
+                  (layer_ori_extent.maxx -  layer_ori_extent.minx);
+              double extra_y =
+                 (map_extent_maxy - map_extent_miny) /
+                  (layer_extent.maxy - layer_extent.miny) *
+                  (layer_ori_extent.maxy -  layer_ori_extent.miny);
+              searchrect.minx = layer_ori_extent.minx - extra_x / 2;
+              searchrect.maxx = layer_ori_extent.maxx + extra_x / 2;
+              searchrect.miny = layer_ori_extent.miny - extra_y / 2;
+              searchrect.maxy = layer_ori_extent.maxy + extra_y / 2;
+            }
+            else
+            {
+              /* otherwise clip the map extent with the reprojected layer */
+              /* extent */
+              searchrect.minx = MS_MAX( map_extent_minx, layer_extent.minx );
+              searchrect.maxx = MS_MIN( map_extent_maxx, layer_extent.maxx );
+              searchrect.miny = MS_MAX( map_extent_miny, layer_extent.miny );
+              searchrect.maxy = MS_MIN( map_extent_maxy, layer_extent.maxy );
+              /* and reproject into the layer projection */
+              msProjectRect(&map_proj, &layer->projection, &searchrect);
+            }
+            bDone = MS_TRUE;
+          }
+
+          msFreeProjection(&map_proj);
+        }
+      }
+
+      if( !bDone )
+        msProjectRect(&map->projection, &layer->projection, &searchrect); /* project the searchrect to source coords */
+    }
 #endif
   } else {
     searchrect.minx = searchrect.miny = 0;
@@ -948,6 +1068,14 @@ int msDrawVectorLayer(mapObj *map, layerObj *layer, imageObj *image)
   }
 
   status = msLayerWhichShapes(layer, searchrect, MS_FALSE);
+
+#ifdef USE_GDAL
+  if( layer->connectiontype == MS_UVRASTER )
+  {
+    msUVRASTERLayerUseMapExtentAndProjectionForNextWhichShapes( layer, NULL );
+  }
+#endif
+
   if(status == MS_DONE) { /* no overlap */
     msLayerClose(layer);
     return MS_SUCCESS;
