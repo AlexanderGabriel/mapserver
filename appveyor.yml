@@ -87,7 +87,8 @@ build_script:
   - phpsdk_deps --update --branch 7.2
   - buildconf
   - configure --enable-snapshot-build
-  - if not exist %LOCALAPPDATA%\php-sdk\phpmaster\vc%VS_VERSION%\%VSCMD_ARG_TGT_ARCH%\php-src\%VSCMD_ARG_TGT_ARCH%\Release_TS\php.exe nmake snap
+  - if "%platform%" == "x64" if not exist %LOCALAPPDATA%\php-sdk\phpmaster\vc%VS_VERSION%\%VSCMD_ARG_TGT_ARCH%\php-src\%VSCMD_ARG_TGT_ARCH%\Release_TS\php.exe nmake snap
+  - if "%platform%" == "x86" if not exist %LOCALAPPDATA%\php-sdk\phpmaster\vc%VS_VERSION%\%VSCMD_ARG_TGT_ARCH%\php-src\Release_TS\php.exe nmake snap
 
 
 test_script:
