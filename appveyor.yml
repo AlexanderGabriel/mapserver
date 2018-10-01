@@ -6,7 +6,7 @@ platform:
 
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
-  - '%LOCALAPPDATA%\sdk'
+  - %LOCALAPPDATA%\sdk
 
 environment:
   matrix:
@@ -28,10 +28,10 @@ build_script:
   - set SDK_URL=http://download.gisinternals.com/sdk/downloads/%SDK_ZIP%
   - echo "%SDK_ZIP%"
   - echo "%SDK_URL%"
-  - if not exist '%LOCALAPPDATA%\sdk' mkdir '%LOCALAPPDATA%\sdk'
-  - if not exist '%LOCALAPPDATA%\sdk\%SDK_ZIP%' cd '%LOCALAPPDATA%\sdk' && appveyor DownloadFile "%SDK_URL%"
-  - if not exist '%LOCALAPPDATA%\sdk\%SDK%' '%LOCALAPPDATA%\sdk' && 7z x "%SDK_ZIP%" > nul
-  - set SDK_PREFIX='%LOCALAPPDATA%\sdk\%SDK%'
+  - if not exist %LOCALAPPDATA%\sdk mkdir %LOCALAPPDATA%\sdk
+  - if not exist %LOCALAPPDATA%\sdk\%SDK_ZIP% cd %LOCALAPPDATA%\sdk && appveyor DownloadFile "%SDK_URL%"
+  - if not exist %LOCALAPPDATA%\sdk\%SDK% %LOCALAPPDATA%\sdk && 7z x "%SDK_ZIP%" > nul
+  - set SDK_PREFIX=%LOCALAPPDATA%\sdk\%SDK%
   - set SDK_INC=%SDK_PREFIX%\include
   - set SDK_LIB=%SDK_PREFIX%\lib
   - set SDK_BIN=%SDK_PREFIX%\bin
