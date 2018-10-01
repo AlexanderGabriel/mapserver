@@ -6,7 +6,7 @@ platform:
 
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
-  - %LOCALAPPDATA%\sdk
+  - '%LOCALAPPDATA%\sdk'
 
 environment:
   matrix:
