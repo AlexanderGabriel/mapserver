@@ -91,7 +91,9 @@ build_script:
 
 
 test_script:
-  - set PATH=%APPVEYOR_BUILD_FOLDER%\build\Release;%SDK_BIN%;%PATH%
+  - set "BUILD_FOLDER=%APPVEYOR_BUILD_FOLDER:\=/%"
+  - set "SDK_BIN=%SDK_BIN:\=/%"
+  - set PATH=%BUILD_FOLDER%\build\Release;%SDK_BIN%;%PATH%
   - set PROJ_LIB=%SDK_BIN%\proj\SHARE
   - cmake --build . --target pythonmapscript-wheel --config Release
 
