@@ -89,7 +89,7 @@ build_script:
 test_script:
   - set PATH=%BUILD_FOLDER%/build/Release;%LocalAppDataFolder%/sdk/%SDK%/bin;%PATH%
   - set PROJ_LIB=%LocalAppDataFolder%/sdk/%SDK%/bin/proj/SHARE
-  - cd %BUILD_FOLDER%  
+  - cd %BUILD_FOLDER% && cd build
   - cmake --build . --target pythonmapscript-wheel --config Release
 
 deploy: off
