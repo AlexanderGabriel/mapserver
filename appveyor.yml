@@ -40,7 +40,44 @@ build_script:
   - set REGEX_DIR=%LocalAppDataFolder%/sdk/regex-0.12
   - if "%platform%" == "x86" SET PYTHON_EXECUTABLE=c:/python27/python.exe
   - if "%platform%" == "x64" SET PYTHON_EXECUTABLE=c:/python27-x64/python.exe
-  - cd %BUILD_FOLDER%  
+
+#Build PHP
+  - move C:\cygwin C:\cygwin_disabled
+  - cd C:\
+  - git clone https://github.com/Microsoft/php-sdk-binary-tools.git php-sdk
+  - cd php-sdk
+  - set VS_VERSION=%VSCMD_VER:~0,2%
+  - set PATH=C:\php-sdk\bin;C:\php-sdk\msys2\usr\bin;%PATH%
+  - set PHP_SDK_ARCH=%platform%
+  - set PHP_SDK_BIN_PATH=C:\php-sdk\bin
+  - set PHP_SDK_MSYS2_PATH=C:\php-sdk\msys2\usr\bin
+  - set PHP_SDK_OS_ARCH=%platform%
+  - set PHP_SDK_PHP_CMD=C:\php-sdk\bin\php\do_php.bat
+  - set PHP_SDK_ROOT_PATH=C:\php-sdk
+  - set PHP_SDK_VC=vc15
+  - set PHP_SDK_VC_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC
+  - set PHP_SDK_VC_NUM=15
+  - set INCLUDE=%VCToolsInstallDir%\ATLMFC\include;%VCToolsInstallDir%\include;%WindowsSdkDir%include\%WindowsSDKLibVersion%\ucrt;%WindowsSdkDir%include\%WindowsSDKLibVersion%\shared;%WindowsSdkDir%include\%WindowsSDKLibVersion%\um;%WindowsSdkDir%include\%WindowsSDKLibVersion%\winrt;%WindowsSdkDir%include\%WindowsSDKLibVersion%\cppwinrt;%INCLUDE%
+  - if "%platform%" == "x64" set LIB=%VCToolsInstallDir%\ATLMFC\lib\x64;%VCToolsInstallDir%\lib\x64;%WindowsSdkDir%lib\%WindowsSDKLibVersion%\ucrt\x64;%WindowsSdkDir%lib\%WindowsSDKLibVersion%\um\x64;%LIB%
+  - if "%platform%" == "x64" set LIBPATH=%VCToolsInstallDir%\ATLMFC\lib\x64;%VCToolsInstallDir%\lib\x64;%VCToolsInstallDir%\lib\x86\store\references;%WindowsSdkDir%UnionMetadata\%WindowsSDKLibVersion%;%WindowsSdkDir%References\%WindowsSDKLibVersion%;C:\Windows\Microsoft.NET\%FrameworkDir64%\%FrameworkVersion64%;
+  - if "%platform%" == "x86" set LIB=%VCToolsInstallDir%\ATLMFC\lib;%VCToolsInstallDir%\lib;%WindowsSdkDir%lib\%WindowsSDKLibVersion%\ucrt;%WindowsSdkDir%lib\%WindowsSDKLibVersion%\um;%LIB%
+  - if "%platform%" == "x86" set LIBPATH=%VCToolsInstallDir%\ATLMFC\lib;%VCToolsInstallDir%\lib;%VCToolsInstallDir%\lib\x86\store\references;%WindowsSdkDir%UnionMetadata\%WindowsSDKLibVersion%;%WindowsSdkDir%References\%WindowsSDKLibVersion%;C:\Windows\Microsoft.NET\%FrameworkDir%\%FrameworkVersion%;
+  - set VSCMD_ARG_no_logo=yes
+  - set __VSCMD_PREINIT_VCToolsVersion=14.14.26428
+  - set __VSCMD_PREINIT_VS150COMNTOOLS=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\
+  - if "%platform%" == "x86" set PHP_SDK_VC_SHELL_CMD="%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" x86
+  - if "%platform%" == "x64" set PHP_SDK_VC_SHELL_CMD="%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" amd64
+  - phpsdk_buildtree phpmaster
+  - cd C:\php-sdk\phpmaster\vc%VS_VERSION%\%VSCMD_ARG_TGT_ARCH%
+  - git clone https://github.com/php/php-src.git
+  - cd C:\php-sdk\phpmaster\vc%VS_VERSION%\%VSCMD_ARG_TGT_ARCH%\php-src
+  - phpsdk_deps --update --branch master
+  - buildconf
+  - configure
+  - nmake
+
+#Build Mapserver
+  - cd %BUILD_FOLDER%
   - mkdir build
   - cd build
   - cmake -G "%VS_FULL%" .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=%SDK_PREFIX% -DFREETYPE_INCLUDE_DIR_freetype2=%SDK_INC%/freetype -DFREETYPE_INCLUDE_DIR_ft2build=%SDK_INC%/freetype -DFREETYPE_LIBRARY=%SDK_LIB%/freetype.lib -DZLIB_INCLUDE_DIR=%SDK_INC% -DZLIB_LIBRARY=%SDK_LIB%/zlib.lib -DPNG_PNG_INCLUDE_DIR=%SDK_INC% -DPNG_LIBRARY=%SDK_LIB%/libpng.lib -DPNG_LIBRARIES=%SDK_LIB%/libpng.lib -DJPEG_INCLUDE_DIR=%SDK_INC% -DJPEG_LIBRARY=%SDK_LIB%/libjpeg.lib -DWITH_PROJ=1 -DPROJ_INCLUDE_DIR=%SDK_INC% -DPROJ_LIBRARY=%SDK_LIB%/proj_i.lib -DFRIBIDI_INCLUDE_DIR=%SDK_INC% -DFRIBIDI_LIBRARY=%SDK_LIB%/fribidi.lib -DHARFBUZZ_INCLUDE_DIR=%SDK_INC%/harfbuzz -DHARFBUZZ_LIBRARY=%SDK_LIB%/harfbuzz.lib -DICONV_INCLUDE_DIR=%SDK_INC% -DICONV_LIBRARY=%SDK_LIB%/iconv.lib -DICONV_DLL=%SDK_BIN%/iconv.dll -DCAIRO_INCLUDE_DIR=%SDK_INC% -DCAIRO_LIBRARY=%SDK_LIB%/cairo.lib -DFCGI_INCLUDE_DIR=%SDK_INC% -DFCGI_LIBRARY=%SDK_LIB%/libfcgi.lib -DGEOS_INCLUDE_DIR=%SDK_INC% -DGEOS_LIBRARY=%SDK_LIB%/geos_c.lib -DPOSTGRESQL_INCLUDE_DIR=%SDK_INC% -DPOSTGRESQL_LIBRARY=%SDK_LIB%/libpqdll.lib -DGDAL_INCLUDE_DIR=%SDK_INC% -DGDAL_LIBRARY=%SDK_LIB%/gdal_i.lib -DLIBXML2_INCLUDE_DIR=%SDK_INC%/libxml -DLIBXML2_LIBRARIES=%SDK_LIB%/libxml2.lib -DGIF_INCLUDE_DIR=%SDK_INC% -DGIF_LIBRARY=%SDK_LIB%/giflib.lib -DWITH_CURL=1 -DCURL_INCLUDE_DIR=%SDK_INC% -DCURL_LIBRARY=%SDK_LIB%/libcurl_imp.lib -DMS_EXTERNAL_LIBS=wsock32.lib -DWITH_SOS=1 -DWITH_CLIENT_WFS=1 -DWITH_CLIENT_WMS=1 -DSVG_INCLUDE_DIR=%SDK_INC% -DSVG_LIBRARY=%SDK_LIB%/libsvg.lib -DSVGCAIRO_INCLUDE_DIR=%SDK_INC% -DSVGCAIRO_LIBRARY=%SDK_LIB%/libsvg-cairo.lib -DWITH_SVGCAIRO=1 -DREGEX_DIR=%REGEX_DIR% -DWITH_POINT_Z_M=1 -DWITH_KML=1 -DWITH_THREAD_SAFETY=1 -DSWIG_EXECUTABLE=%SWIG_EXECUTABLE% -DWITH_PYTHON=1 -DPYTHON_EXECUTABLE=%PYTHON_EXECUTABLE% -DWITH_CSHARP=1 -DWITH_PROTOBUFC=0
