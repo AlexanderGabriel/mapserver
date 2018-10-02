@@ -7,7 +7,6 @@ platform:
 cache:
   - '%LOCALAPPDATA%\pip\Cache'
   - '%LOCALAPPDATA%\sdk'
-  - '%LOCALAPPDATA%\php-sdk.7z'
 
 environment:
   matrix:
