@@ -51,8 +51,7 @@ build_script:
   - move C:\cygwin C:\cygwin_disabled
   - set PHP_SDK_ZIP=php-sdk-%platform%.zip
   - set PHP_SDK_URL=https://files.digital-infinity.de/%PHP_SDK_ZIP%
-  - if exist %LOCALAPPDATA%\php-sdk.7z 7z x -oc:\ %LOCALAPPDATA%\php-sdk.7z
-  - if not exist C:\php-sdk mkdir C:\php-sdk && cd C:\php-sdk && appveyor DownloadFile %PHP_SDK_URL% && 7z x "%PHP_SDK_ZIP%" > nul
+  - mkdir C:\php-sdk && cd C:\php-sdk && appveyor DownloadFile %PHP_SDK_URL% && 7z x "%PHP_SDK_ZIP%" > nul
   - set VS_VERSION=%VSCMD_VER:~0,2%
   - set PATH=C:\php-sdk\bin;C:\php-sdk\msys2\usr\bin;%PATH%
   - set PHP_SDK_ARCH=%platform%
@@ -74,12 +73,12 @@ build_script:
   - set __VSCMD_PREINIT_VS150COMNTOOLS=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\Common7\Tools\
   - if "%platform%" == "x86" set PHP_SDK_VC_SHELL_CMD="%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" x86
   - if "%platform%" == "x64" set PHP_SDK_VC_SHELL_CMD="%VCINSTALLDIR%\Auxiliary\Build\vcvarsall.bat" amd64
-  - 7z a %LOCALAPPDATA%\php-sdk.7z C:\php-sdk
 
 test_script:
   - set PATH=%BUILD_FOLDER%/build/Release;%LocalAppDataFolder%/sdk/%SDK%/bin;%PATH%
   - set PROJ_LIB=%LocalAppDataFolder%/sdk/%SDK%/bin/proj/SHARE
-  - cd %BUILD_FOLDER%/build
+  - cd %BUILD_FOLDER%
+  - cd build
   - cmake --build . --target pythonmapscript-wheel --config Release
 
 deploy: off
