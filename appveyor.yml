@@ -93,7 +93,7 @@ build_script:
   - cmake --build . --config Release
 #Build Mapserver with PHPNG
   - cd %BUILD_FOLDER%
-  - if not exist mkdir buildphpng
+  - if not exist buildphpng mkdir buildphpng
   - cd buildphpng
   - set SWIG_EXECUTABLE=%LOCALAPPDATA%\swig\swig.exe
   - set SWIG_DIR=%LocalAppDataFolder%\swig
@@ -102,7 +102,7 @@ build_script:
   - cd C:\
   - ps: $blockRdp = $true; iex ((new-object net.webclient).DownloadString('https://raw.githubusercontent.com/appveyor/ci/master/scripts/enable-rdp.ps1'))
   - cd %BUILD_FOLDER%
-  - if not exist mkdir buildphpng
+  - if not exist buildphpng mkdir buildphpng
   - cd buildphpng
   - cmake --build . --config Release
 
