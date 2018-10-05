@@ -40,7 +40,7 @@ build_script:
   - set SWIG_EXECUTABLE=%BUILD_FOLDER%/sdk/swigwin-3.0.12/swig.exe
   - set REGEX_DIR=%BUILD_FOLDER%/sdk/regex-0.12
   - mkdir C:\php-sdk && cd C:\php-sdk
-  - appveyor DownloadFile https://files.digital-infinity.de/https://files.digital-infinity.de/php-sdk-7.2.10-%VSCMD_ARG_TGT_ARCH%-nts.zip
+  - appveyor DownloadFile https://files.digital-infinity.de/php-sdk-7.2.10-%VSCMD_ARG_TGT_ARCH%-nts.zip
   - 7z x php-sdk-7.2.10-%VSCMD_ARG_TGT_ARCH%-nts.zip > nul
   - if "%platform%" == "x86" SET PYTHON_EXECUTABLE=c:/python27/python.exe
   - if "%platform%" == "x64" SET PYTHON_EXECUTABLE=c:/python27-x64/python.exe
