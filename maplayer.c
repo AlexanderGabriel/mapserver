@@ -229,7 +229,8 @@ int msLayerOpen(layerObj *layer)
   if(layer->tileindex && layer->connectiontype == MS_SHAPEFILE)
     layer->connectiontype = MS_TILED_SHAPEFILE;
 
-  if(layer->type == MS_LAYER_RASTER && layer->connectiontype != MS_WMS)
+  if(layer->type == MS_LAYER_RASTER && layer->connectiontype != MS_WMS
+      && layer->connectiontype != MS_KERNELDENSITY)
     layer->connectiontype = MS_RASTER;
 
   if ( ! layer->vtable) {
@@ -416,6 +417,30 @@ int msLayerGetShape(layerObj *layer, shapeObj *shape, resultObj *record)
 
   return rv;
 }
+
+/*
+** Returns the number of shapes that match the potential filter and extent.
+ * rectProjection is the projection in which rect is expressed, or can be NULL if
+ * rect should be considered in the layer projection.
+ * This should be equivalent to calling msLayerWhichShapes() and counting the
+ * number of shapes returned by msLayerNextShape(), honouring layer->maxfeatures
+ * limitation if layer->maxfeatures>=0, and honouring layer->startindex if
+ * layer->startindex >= 1 and paging is enabled.
+ * Returns -1 in case of failure.
+ */
+int msLayerGetShapeCount(layerObj *layer, rectObj rect, projectionObj *rectProjection)
+{
+  int rv;
+
+  if( ! layer->vtable) {
+    rv = msInitializeVirtualTable(layer);
+    if(rv != MS_SUCCESS)
+      return -1;
+  }
+
+  return layer->vtable->LayerGetShapeCount(layer, rect, rectProjection);
+}
+
 
 /*
 ** Closes resources used by a particular layer.
@@ -1095,12 +1120,26 @@ Returns the number of inline feature of a layer
 */
 int msLayerGetNumFeatures(layerObj *layer)
 {
-  if ( ! layer->vtable) {
-    int rv =  msInitializeVirtualTable(layer);
-    if (rv != MS_SUCCESS)
-      return rv;
-  }
-  return layer->vtable->LayerGetNumFeatures(layer);
+    int need_to_close = MS_FALSE, result = -1;
+
+    if (!msLayerIsOpen(layer)) {
+        if (msLayerOpen(layer) != MS_SUCCESS)
+            return result;
+        need_to_close = MS_TRUE;
+    }
+
+    if (!layer->vtable) {
+        int rv = msInitializeVirtualTable(layer);
+        if (rv != MS_SUCCESS)
+            return result;
+    }
+
+    result = layer->vtable->LayerGetNumFeatures(layer);
+
+    if (need_to_close)
+        msLayerClose(layer);
+
+    return(result);
 }
 
 void
@@ -1522,6 +1561,83 @@ int LayerDefaultGetShape(layerObj *layer, shapeObj *shape, resultObj *record)
   return MS_FAILURE;
 }
 
+int LayerDefaultGetShapeCount(layerObj *layer, rectObj rect, projectionObj *rectProjection)
+{
+  int status;
+  shapeObj shape, searchshape;
+  int nShapeCount = 0;
+  rectObj searchrect = rect;
+
+  msInitShape(&searchshape);
+  msRectToPolygon(searchrect, &searchshape);
+
+#ifdef USE_PROJ
+  if( rectProjection != NULL ) 
+  {
+    if(layer->project && msProjectionsDiffer(&(layer->projection), rectProjection))
+      msProjectRect(rectProjection, &(layer->projection), &searchrect); /* project the searchrect to source coords */
+    else
+      layer->project = MS_FALSE;
+  }
+#endif
+
+  status = msLayerWhichShapes(layer, searchrect, MS_TRUE) ;
+  if( status == MS_FAILURE )
+  {
+    msFreeShape(&searchshape);
+    return -1;
+  }
+  else if( status == MS_DONE )
+  {
+    msFreeShape(&searchshape);
+    return 0;
+  }
+
+  msInitShape(&shape);
+  while((status = msLayerNextShape(layer, &shape)) == MS_SUCCESS)
+  {
+    if( rectProjection != NULL ) 
+    {
+#ifdef USE_PROJ
+      if(layer->project && msProjectionsDiffer(&(layer->projection), rectProjection))
+        msProjectShape(&(layer->projection), rectProjection, &shape);
+      else
+        layer->project = MS_FALSE;
+#endif
+
+      if(msRectContained(&shape.bounds, &rect) == MS_TRUE) { /* if the whole shape is in, don't intersect */
+        status = MS_TRUE;
+      } else {
+        switch(shape.type) { /* make sure shape actually intersects the qrect (ADD FUNCTIONS SPECIFIC TO RECTOBJ) */
+          case MS_SHAPE_POINT:
+            status = msIntersectMultipointPolygon(&shape, &searchshape);
+            break;
+          case MS_SHAPE_LINE:
+            status = msIntersectPolylinePolygon(&shape, &searchshape);
+            break;
+          case MS_SHAPE_POLYGON:
+            status = msIntersectPolygons(&shape, &searchshape);
+            break;
+          default:
+            break;
+        }
+      }
+    }
+    else
+      status = MS_TRUE;
+
+    if( status == MS_TRUE )
+      nShapeCount++ ;
+    msFreeShape(&shape);
+    if(layer->maxfeatures > 0 && layer->maxfeatures == nShapeCount)
+      break;
+  }
+
+  msFreeShape(&searchshape);
+
+  return nShapeCount;
+}
+
 int LayerDefaultClose(layerObj *layer)
 {
   return MS_SUCCESS;
@@ -1564,7 +1680,7 @@ int msLayerApplyPlainFilterToLayer(FilterEncodingNode *psNode, mapObj *map, int 
 int msLayerSupportsSorting(layerObj *layer)
 {
   if (layer && (
-         (layer->connectiontype == MS_OGR) || (layer->connectiontype == MS_POSTGIS) || (layer->connectiontype == MS_ORACLESPATIAL)
+    (layer->connectiontype == MS_OGR) || (layer->connectiontype == MS_POSTGIS) || (layer->connectiontype == MS_ORACLESPATIAL) || ((layer->connectiontype == MS_PLUGIN) && (strstr(layer->plugin_library,"msplugin_oracle") != NULL))
                )
      )
     return MS_TRUE;
@@ -1679,8 +1795,43 @@ int LayerDefaultCreateItems(layerObj *layer, const int nt)
 
 int LayerDefaultGetNumFeatures(layerObj *layer)
 {
-  msSetError(MS_SHPERR, "Not an inline layer", "msLayerGetNumFeatures()");
-  return MS_FAILURE;
+    rectObj extent;
+    int status;
+    int result;
+    shapeObj shape;
+
+    /* calculate layer extent */
+    if (!MS_VALID_EXTENT(layer->extent)) {
+        if (msLayerGetExtent(layer, &extent) != MS_SUCCESS) {
+            msSetError(MS_MISCERR, "Unable to get layer extent", "LayerDefaultGetNumFeatures()");
+            return -1;
+        }
+    }
+    else
+        extent = layer->extent;
+
+    /* Cleanup any previous item selection */
+    msLayerFreeItemInfo(layer);
+    if (layer->items) {
+        msFreeCharArray(layer->items, layer->numitems);
+        layer->items = NULL;
+        layer->numitems = 0;
+    }
+
+    status = msLayerWhichShapes(layer, extent, MS_FALSE);
+    if (status == MS_DONE) { /* no overlap */
+        return 0;
+    }
+    else if (status != MS_SUCCESS) {
+        return -1;
+    }
+
+    result = 0;
+    while ((status = msLayerNextShape(layer, &shape)) == MS_SUCCESS) {
+        ++result;
+    }
+
+    return result;
 }
 
 int LayerDefaultAutoProjection(layerObj *layer, projectionObj* projection)
@@ -1825,6 +1976,7 @@ static int populateVirtualTable(layerVTableObj *vtable)
   vtable->LayerNextShape = LayerDefaultNextShape;
   /* vtable->LayerResultsGetShape = LayerDefaultResultsGetShape; */
   vtable->LayerGetShape = LayerDefaultGetShape;
+  vtable->LayerGetShapeCount = LayerDefaultGetShapeCount;
   vtable->LayerClose = LayerDefaultClose;
   vtable->LayerGetItems = LayerDefaultGetItems;
   vtable->LayerGetExtent = LayerDefaultGetExtent;
@@ -1880,7 +2032,8 @@ int msInitializeVirtualTable(layerObj *layer)
   if(layer->tileindex && layer->connectiontype == MS_SHAPEFILE)
     layer->connectiontype = MS_TILED_SHAPEFILE;
 
-  if(layer->type == MS_LAYER_RASTER && layer->connectiontype != MS_WMS)
+  if(layer->type == MS_LAYER_RASTER && layer->connectiontype != MS_WMS
+      && layer->connectiontype != MS_KERNELDENSITY)
     layer->connectiontype = MS_RASTER;
 
   switch(layer->connectiontype) {
@@ -1901,6 +2054,10 @@ int msInitializeVirtualTable(layerObj *layer)
       break;
     case(MS_WMS):
       /* WMS should be treated as a raster layer */
+      return(msRASTERLayerInitializeVirtualTable(layer));
+      break;
+    case(MS_KERNELDENSITY):
+      /* KERNELDENSITY should be treated as a raster layer */
       return(msRASTERLayerInitializeVirtualTable(layer));
       break;
     case(MS_ORACLESPATIAL):
@@ -2131,6 +2288,7 @@ msINLINELayerInitializeVirtualTable(layerObj *layer)
   layer->vtable->LayerIsOpen = msINLINELayerIsOpen;
   layer->vtable->LayerWhichShapes = msINLINELayerWhichShapes;
   layer->vtable->LayerNextShape = msINLINELayerNextShape;
+  /* layer->vtable->LayerGetShapeCount, use default */
   layer->vtable->LayerGetShape = msINLINELayerGetShape;
   layer->vtable->LayerClose = msINLINELayerClose;
   /* layer->vtable->LayerGetItems, use default */

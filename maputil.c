@@ -250,7 +250,7 @@ static void bindLabel(layerObj *layer, shapeObj *shape, labelObj *label, int dra
     }
 
     if(label->bindings[MS_LABEL_BINDING_POSITION].index != -1) {
-      int tmpPosition;
+      int tmpPosition = 0;
       bindIntegerAttribute(&tmpPosition, shape->values[label->bindings[MS_LABEL_BINDING_POSITION].index]);
       if(tmpPosition != 0) { /* is this test sufficient? */
         label->position = tmpPosition;
@@ -826,7 +826,7 @@ int msConstrainExtent(rectObj *bounds, rectObj *rect, double overlay)
 ** The filename is NULL when the image is supposed to be written to stdout.
 */
 
-int msSaveImage(mapObj *map, imageObj *img, char *filename)
+int msSaveImage(mapObj *map, imageObj *img, const char *filename)
 {
   int nReturnVal = MS_FAILURE;
   char szPath[MS_MAXPATHLEN];
@@ -1478,7 +1478,7 @@ char *msTmpPath(mapObj *map, const char *mappath, const char *tmppath)
   }
 
   fullPath = msBuildPath(szPath, mappath, tmpBase);
-  return strdup(fullPath);
+  return msStrdup(fullPath);
 }
 
 /**********************************************************************
@@ -1505,7 +1505,7 @@ char *msTmpFilename(const char *ext)
   snprintf(tmpFname, tmpFnameBufsize, "%s_%x.%s", tmpId, tmpCount++, ext);
   msReleaseLock( TLOCK_TMPFILE );
 
-  fullFname = strdup(tmpFname);
+  fullFname = msStrdup(tmpFname);
   free(tmpFname);
 
   return fullFname;
@@ -1894,6 +1894,17 @@ shapeObj *msOffsetPolyline(shapeObj *p, double offsetx, double offsety)
 
 int msSetup()
 {
+#ifdef _WIN32
+  char* maxfiles = getenv("MS_MAX_OPEN_FILES");
+  if (maxfiles) {
+    int res = _getmaxstdio();
+    if (res < 2048) {
+      res = _setmaxstdio(atoi(maxfiles));
+      assert(res != -1);
+    }
+  }
+#endif
+
 #ifdef USE_THREAD
   msThreadInit();
 #endif
@@ -2259,6 +2270,14 @@ int msExtentsOverlap(mapObj *map, layerObj *layer)
   ** in the same projection. */
   if( ! (layer->projection.numargs > 0) )
     return msRectOverlap( &(map->extent), &(layer->extent) );
+
+  /* In the case where map and layer projections are identical, and the */
+  /* bounding boxes don't cross the dateline, do simple rectangle comparison */
+  if( map->extent.minx < map->extent.maxx &&
+      layer->extent.minx < layer->extent.maxx &&
+      !msProjectionsDiffer(&(map->projection), &(layer->projection)) ) {
+    return msRectOverlap( &(map->extent), &(layer->extent) );
+  }
 
   /* We need to transform our rectangles for comparison,
   ** so we will work with copies and leave the originals intact. */

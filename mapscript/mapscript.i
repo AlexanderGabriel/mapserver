@@ -30,7 +30,11 @@
 ============================================================================
 */
 
+#ifdef SWIGPHP
+%module mapscriptng
+#else
 %module mapscript
+#endif
 
 #ifdef SWIGCSHARP
 %ignore frompointer;
@@ -54,8 +58,9 @@
 #include "../../mapprimitive.h"
 #include "../../mapshape.h"
 
-#ifdef SWIGPYTHON
-#include "pygdioctx/pygdioctx.h"
+#if defined(WIN32) && defined(SWIGCSHARP)
+/* <windows.h> is needed for GetExceptionCode() for unhandled exception */
+#include <windows.h>
 #endif
 
 %}
@@ -225,6 +230,12 @@ typedef struct {
 #ifdef SWIGTCL8
 %include "tclmodule.i"
 #endif /* SWIGTCL8 */
+
+/* PHP7 */
+#ifdef SWIGPHP7
+%include "php7module.i"
+#endif /* SWIGPHP7 */
+
 
 /* 
 =============================================================================

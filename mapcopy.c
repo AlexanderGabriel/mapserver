@@ -500,6 +500,7 @@ int msCopyStyle(styleObj *dst, styleObj *src)
   MS_COPYSTELEM(offsetx);
   MS_COPYSTELEM(offsety);
   MS_COPYSTELEM(angle);
+  MS_COPYSTELEM(autoangle);
   MS_COPYSTELEM(minvalue);
   MS_COPYSTELEM(maxvalue);
   MS_COPYSTELEM(opacity);
@@ -931,10 +932,17 @@ int msCopyCompositingFilter(CompositingFilter **pdst, CompositingFilter *src) {
     *pdst = NULL;
     return MS_SUCCESS;
   }
-  if(!dst) {
-    dst = *pdst = msSmallMalloc(sizeof(CompositingFilter));
-  } 
-  dst->filter = msStrdup(src->filter);
+  while(src) {
+    if(!dst) {
+      dst = *pdst = msSmallMalloc(sizeof(CompositingFilter));
+    } else {
+      dst->next = msSmallMalloc(sizeof(CompositingFilter));
+      dst = dst->next;
+    }
+    dst->filter = msStrdup(src->filter);
+    dst->next = NULL;
+    src = src->next;
+  }
   return MS_SUCCESS;
 }
 

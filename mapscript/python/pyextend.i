@@ -49,7 +49,7 @@ def fromstring(data, mappath=None):
         ob.updateFromString(data)
         return ob
     else:
-        raise ValueError, "No map, layer, class, or style found. Can not load from provided string"
+        raise ValueError("No map, layer, class, or style found. Can not load from provided string")
 }
 
 /* ===========================================================================
@@ -80,16 +80,15 @@ def fromstring(data, mappath=None):
         return self.toString()
         
     def __contains__(self, item):
-        item_type = str(type(item))
-        if item_type == "<class 'mapscript.pointObj'>":
+        item_type = item.__class__.__name__
+        if item_type == "pointObj":
             if item.x >= self.minx and item.x <= self.maxx \
             and item.y >= self.miny and item.y <= self.maxy:
                 return True
             else:
                 return False
         else:
-            raise TypeError, \
-                '__contains__ does not yet handle %s' % (item_type)
+            raise TypeError('__contains__ does not yet handle %s' % (item_type))
         
 }
 
@@ -350,13 +349,6 @@ def fromstring(data, mappath=None):
 
         if (file == Py_None) /* write to stdout */
             retval = msSaveImage(NULL, self, NULL);
-
-        else if (PyFile_Check(file)) /* a Python (C) file */
-        {
-            renderer = self->format->vtable;
-            /* FIXME? as an improvement, pass a map argument instead of the NULL (see #4216) */
-            retval = renderer->saveImage(self, NULL, PyFile_AsFile(file), self->format);
-        }
         else /* presume a Python file-like object */
         {
             imgbuffer = msSaveImageBuffer(self, &imgsize,
@@ -392,7 +384,7 @@ def fromstring(data, mappath=None):
             msSetError(MS_IMGERR, "failed to get image buffer", "saveToString()");
             return NULL;
         }
-        imgstring = PyString_FromStringAndSize((const char*) imgbytes, size); 
+        imgstring = PyBytes_FromStringAndSize((const char*) imgbytes, size);
         free(imgbytes);
         return imgstring;
     }

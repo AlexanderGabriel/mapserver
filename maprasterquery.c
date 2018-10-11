@@ -121,6 +121,7 @@ static int addResult(resultCacheObj *cache, int classindex, int shapeindex, int 
   cache->results[i].tileindex = tileindex;
   cache->results[i].shapeindex = shapeindex;
   cache->results[i].resultindex = -1; /* unused */
+  cache->results[i].shape = NULL;
   cache->numresults++;
 
   return(MS_SUCCESS);
@@ -193,7 +194,7 @@ static void msRasterLayerInfoInitialize( layerObj *layer )
   /* We need to do this or the layer->layerinfo will be interpreted */
   /* as shapefile access info because the default connectiontype is */
   /* MS_SHAPEFILE. */
-  if (layer->connectiontype != MS_WMS)
+  if (layer->connectiontype != MS_WMS && layer->connectiontype != MS_KERNELDENSITY)
     layer->connectiontype = MS_RASTER;
 
   rlinfo->query_result_hard_max = 1000000;
@@ -1482,6 +1483,7 @@ msRASTERLayerInitializeVirtualTable(layerObj *layer)
   layer->vtable->LayerWhichShapes = msRASTERLayerWhichShapes;
   layer->vtable->LayerNextShape = msRASTERLayerNextShape;
   layer->vtable->LayerGetShape = msRASTERLayerGetShape;
+  /* layer->vtable->LayerGetShapeCount, use default */
   layer->vtable->LayerClose = msRASTERLayerClose;
   layer->vtable->LayerGetItems = msRASTERLayerGetItems;
   layer->vtable->LayerGetExtent = msRASTERLayerGetExtent;

@@ -3189,7 +3189,7 @@ PHP_METHOD(mapObj, loadOwsParameters)
   php_request = MAPSCRIPT_OBJ_P(php_owsrequest_object, zrequest);
 
   if (!version) {
-    version = strdup("1.1.1");
+    version = msStrdup("1.1.1");
     isZval = 0;
   }
 
