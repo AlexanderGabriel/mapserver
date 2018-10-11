@@ -36,7 +36,7 @@ target_link_libraries(php_mapscript ${MAPSERVER_LIBMAPSERVER})
 ENDIF(WIN32)
 
 set_target_properties(php_mapscript PROPERTIES PREFIX "")
-install(TARGETS php_mapscript DESTINATION ${PHP5_EXTENSION_DIR})
+#install(TARGETS php_mapscript DESTINATION ${PHP5_EXTENSION_DIR})
 
 #install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mapscript.py DESTINATION ${PYTHON_SITE_PACKAGES})
 #install(TARGETS mapscript DESTINATION ${PYTHON_SITE_PACKAGES})
