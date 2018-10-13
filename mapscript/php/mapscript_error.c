@@ -48,7 +48,7 @@ zval* mapscript_throw_exception(char *format TSRMLS_DC, ...)
   va_list args;
   char message[MAX_EXCEPTION_MSG];
 #ifdef ZTS
-  va_start(args, TSRMLS_C);
+  va_start(args, format);
 #else
   va_start(args, format);
 #endif
@@ -77,7 +77,7 @@ zval* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...)
   }
 
 #ifdef ZTS
-  va_start(args, TSRMLS_C);
+  va_start(args, format);
 #else
   va_start(args, format);
 #endif
@@ -91,7 +91,7 @@ void mapscript_report_php_error(int error_type, char *format TSRMLS_DC, ...)
   va_list args;
   char message[MAX_EXCEPTION_MSG];
 #ifdef ZTS
-  va_start(args, TSRMLS_C);
+  va_start(args, format);
 #else
   va_start(args, format);
 #endif
