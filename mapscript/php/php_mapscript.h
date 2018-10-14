@@ -101,8 +101,8 @@
 #define MAPSCRIPT_ZVAL zval*
 #define MAPSCRIPT_ZVAL_P zval**
 
-#define MAPSCRIPT_OBJ_P(t, o) (t *) zend_object_store_get_object(o TSRMLS_CC)
-#define MAPSCRIPT_OBJ(t, o) (t *) zend_object_store_get_object(o TSRMLS_CC)
+#define MAPSCRIPT_OBJ_P(t, o) (t *) zend_object_store_get_object(o)
+#define MAPSCRIPT_OBJ(t, o) (t *) zend_object_store_get_object(o)
 #define MAPSCRIPT_RETURN_STRINGL(a, b, c) RETURN_STRINGL(a, b, c)
 #define MAPSCRIPT_RETURN_STRING(a, b) RETURN_STRING(a, b)
 #define MAPSCRIPT_RETVAL_STRING(a, b) RETVAL_STRING(a, b)
@@ -131,7 +131,7 @@ extern zend_module_entry mapscript_module_entry;
 
 #ifndef zend_parse_parameters_none
 #define zend_parse_parameters_none()        \
-  zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "")
+  zend_parse_parameters(ZEND_NUM_ARGS(), "")
 #endif
 
 /* it looks like that macro is not always defined: ticket #3926 */
@@ -146,19 +146,19 @@ extern zend_module_entry mapscript_module_entry;
 #define PHP_MAPSCRIPT_ERROR_HANDLING(force_exceptions) \
   zend_error_handling error_handling; \
   if(force_exceptions || getThis()) { \
-    zend_replace_error_handling(EH_THROW, mapscript_ce_mapscriptexception, &error_handling TSRMLS_CC); \
+    zend_replace_error_handling(EH_THROW, mapscript_ce_mapscriptexception, &error_handling); \
   }
 
 #define PHP_MAPSCRIPT_RESTORE_ERRORS(force_exceptions) \
   if(force_exceptions || getThis()) { \
-    zend_restore_error_handling(&error_handling TSRMLS_CC); \
+    zend_restore_error_handling(&error_handling); \
   }
 
 #else
 /* 5.2 versions of the macros */
 #define PHP_MAPSCRIPT_ERROR_HANDLING(force_exceptions) \
   if(force_exceptions || getThis()) { \
-    php_set_error_handling(EH_THROW, mapscript_ce_mapscriptexception TSRMLS_CC); \
+    php_set_error_handling(EH_THROW, mapscript_ce_mapscriptexception); \
   }
 
 #define PHP_MAPSCRIPT_RESTORE_ERRORS(force_exceptions) \
@@ -773,66 +773,66 @@ extern zend_class_entry *mapscript_ce_cluster;
 #if PHP_VERSION_ID < 70000
 /* PHP Object constructors */
 extern zend_object_value mapscript_object_new(zend_object *zobj, zend_class_entry *ce,
-    void (*zend_objects_free_object) TSRMLS_DC);
+    void (*zend_objects_free_object));
 extern zend_object_value mapscript_object_new_ex(zend_object *zobj, zend_class_entry *ce,
     void (*zend_objects_free_object),
-    zend_object_handlers *object_handlers TSRMLS_DC);
+    zend_object_handlers *object_handlers);
 #endif /* PHP_VERSION_ID < 70000 */
 
 extern void mapscript_fetch_object(zend_class_entry *ce, zval* zval_parent, php_layer_object* layer,
-                                   void *internal_object, MAPSCRIPT_ZVAL_P php_object_storage TSRMLS_DC);
-extern void mapscript_create_color(colorObj *color, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_rect(rectObj *rect, parent_object php_parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_hashtable(hashTableObj *hashtable, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_label(labelObj *label, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_style(styleObj *style, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_symbol(symbolObj *symbol, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_class(classObj *class, parent_object parent, zval *return_value TSRMLS_DC);
+                                   void *internal_object, MAPSCRIPT_ZVAL_P php_object_storage);
+extern void mapscript_create_color(colorObj *color, parent_object parent, zval *return_value);
+extern void mapscript_create_rect(rectObj *rect, parent_object php_parent, zval *return_value);
+extern void mapscript_create_hashtable(hashTableObj *hashtable, parent_object parent, zval *return_value);
+extern void mapscript_create_label(labelObj *label, parent_object parent, zval *return_value);
+extern void mapscript_create_style(styleObj *style, parent_object parent, zval *return_value);
+extern void mapscript_create_symbol(symbolObj *symbol, parent_object parent, zval *return_value);
+extern void mapscript_create_class(classObj *class, parent_object parent, zval *return_value);
 #ifdef disabled
 extern void mapscript_create_labelcachemember(labelCacheMemberObj *labelcachemember,
-    parent_object parent, zval *return_value TSRMLS_DC);
+    parent_object parent, zval *return_value);
 extern void mapscript_create_labelcache(labelCacheObj *labelcache,
-                                        parent_object parent, zval *return_value TSRMLS_DC);
+                                        parent_object parent, zval *return_value);
 #endif
 extern void mapscript_create_labelleader(labelLeaderObj *labelleader,
-    parent_object parent, zval *return_value TSRMLS_DC);
+    parent_object parent, zval *return_value);
 extern void mapscript_create_result(resultObj *result,
-                                    parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_scalebar(scalebarObj *scalebar, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_owsrequest(cgiRequestObj *cgirequest, zval *return_value TSRMLS_DC);
-extern void mapscript_create_image(imageObj *image, zval *return_value TSRMLS_DC);
-extern void mapscript_create_web(webObj *web, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_legend(legendObj *legend, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_outputformat(outputFormatObj *outputformat, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_querymap(queryMapObj *querymap, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_grid(graticuleObj *grid, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_error(errorObj *error, zval *return_value TSRMLS_DC);
-extern void mapscript_create_referencemap(referenceMapObj *referenceMap, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_point(pointObj *point, parent_object parent, zval *return_value TSRMLS_DC);
+                                    parent_object parent, zval *return_value);
+extern void mapscript_create_scalebar(scalebarObj *scalebar, parent_object parent, zval *return_value);
+extern void mapscript_create_owsrequest(cgiRequestObj *cgirequest, zval *return_value);
+extern void mapscript_create_image(imageObj *image, zval *return_value);
+extern void mapscript_create_web(webObj *web, parent_object parent, zval *return_value);
+extern void mapscript_create_legend(legendObj *legend, parent_object parent, zval *return_value);
+extern void mapscript_create_outputformat(outputFormatObj *outputformat, parent_object parent, zval *return_value);
+extern void mapscript_create_querymap(queryMapObj *querymap, parent_object parent, zval *return_value);
+extern void mapscript_create_grid(graticuleObj *grid, parent_object parent, zval *return_value);
+extern void mapscript_create_error(errorObj *error, zval *return_value);
+extern void mapscript_create_referencemap(referenceMapObj *referenceMap, parent_object parent, zval *return_value);
+extern void mapscript_create_point(pointObj *point, parent_object parent, zval *return_value);
 extern void mapscript_create_projection(projectionObj *projection,
-                                        parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_line(lineObj *line, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_shape(shapeObj *shape, parent_object parent, php_layer_object *php_layer, zval *return_value TSRMLS_DC);
-extern void mapscript_create_shapefile(shapefileObj *shapefile, zval *return_value TSRMLS_DC);
-extern void mapscript_create_layer(layerObj *layer, parent_object parent, zval *return_value TSRMLS_DC);
-extern void mapscript_create_map(mapObj *map, zval *return_value TSRMLS_DC);
-extern void mapscript_create_cluster(clusterObj *cluster, parent_object php_parent, zval *return_value TSRMLS_DC);
+                                        parent_object parent, zval *return_value);
+extern void mapscript_create_line(lineObj *line, parent_object parent, zval *return_value);
+extern void mapscript_create_shape(shapeObj *shape, parent_object parent, php_layer_object *php_layer, zval *return_value);
+extern void mapscript_create_shapefile(shapefileObj *shapefile, zval *return_value);
+extern void mapscript_create_layer(layerObj *layer, parent_object parent, zval *return_value);
+extern void mapscript_create_map(mapObj *map, zval *return_value);
+extern void mapscript_create_cluster(clusterObj *cluster, parent_object php_parent, zval *return_value);
 
 /* Exported functions for PHP Mapscript API */
 /* throw a MapScriptException */
 #if  PHP_VERSION_ID >= 70000
-extern zend_object * mapscript_throw_exception(char *format TSRMLS_DC, ...);
+extern zend_object * mapscript_throw_exception(char *format, ...);
 #else
-extern zval * mapscript_throw_exception(char *format TSRMLS_DC, ...);
+extern zval * mapscript_throw_exception(char *format, ...);
 #endif
 /* print all MapServer errors (as Warning) and throw a MapScriptException */
 #if PHP_VERSION_ID >= 70000
-extern zend_object* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...);
+extern zend_object* mapscript_throw_mapserver_exception(char *format, ...);
 #else
-extern zval* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...);
+extern zval* mapscript_throw_mapserver_exception(char *format, ...);
 #endif
-extern void mapscript_report_mapserver_error(int error_type TSRMLS_DC);
-extern void mapscript_report_php_error(int error_type, char *format TSRMLS_DC, ...);
+extern void mapscript_report_mapserver_error(int error_type);
+extern void mapscript_report_php_error(int error_type, char *format, ...);
 
 /*=====================================================================
  *                   Internal functions from mapscript_i.c

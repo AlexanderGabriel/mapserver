@@ -79,7 +79,7 @@ PHP_METHOD(symbolObj, __construct)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Os",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Os",
                             &zmap, mapscript_ce_map,
                             &symbolName, &symbolName_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -93,7 +93,7 @@ PHP_METHOD(symbolObj, __construct)
   symbolId = msAddNewSymbol(php_map->map, symbolName);
 
   if (symbolId == -1) {
-    mapscript_throw_mapserver_exception("Unable to construct symbolObj" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Unable to construct symbolObj");
     return;
   }
 
@@ -113,7 +113,7 @@ PHP_METHOD(symbolObj, __get)
   php_symbol_object *php_symbol;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -141,7 +141,7 @@ PHP_METHOD(symbolObj, __get)
                                     else IF_GET_DOUBLE("maxy", php_symbol->symbol->maxy)
                                       else IF_GET_STRING("font", php_symbol->symbol->font)
                                         else {
-                                          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                                          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                                         }
 }
 
@@ -154,7 +154,7 @@ PHP_METHOD(symbolObj, __set)
   php_symbol_object *php_symbol;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -181,9 +181,9 @@ PHP_METHOD(symbolObj, __set)
                                   else IF_SET_DOUBLE("miny", php_symbol->symbol->miny, value)
                                     else if ( (STRING_EQUAL("numpoints", property)) ||
                                               (STRING_EQUAL("imagepath", property))) {
-                                      mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+                                      mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
                                     } else {
-                                      mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                                      mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                                     }
 }
 
@@ -199,7 +199,7 @@ PHP_METHOD(symbolObj, setPoints)
   php_symbol_object *php_symbol;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                             &zpoints) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -212,7 +212,7 @@ PHP_METHOD(symbolObj, setPoints)
   numelements = zend_hash_num_elements(points_hash);
   if ((numelements == 0) || (numelements % 2 != 0)) {
     mapscript_report_php_error(E_WARNING,
-                               "symbol->setpoints : invalid array of %d element(s) as parameter." TSRMLS_CC, numelements);
+                               "symbol->setpoints : invalid array of %d element(s) as parameter.", numelements);
     RETURN_LONG(MS_FAILURE);
 
   }
@@ -290,7 +290,7 @@ PHP_METHOD(symbolObj, setImagePath)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -302,7 +302,7 @@ PHP_METHOD(symbolObj, setImagePath)
   status = msLoadImageSymbol(php_symbol->symbol, filename);
 
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -319,7 +319,7 @@ PHP_METHOD(symbolObj, setImage)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zimage, mapscript_ce_image) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -344,7 +344,7 @@ PHP_METHOD(symbolObj, getImage)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zoutputformat, mapscript_ce_outputformat) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -357,7 +357,7 @@ PHP_METHOD(symbolObj, getImage)
 
   image = symbolObj_getImage(php_symbol->symbol, php_outputformat->outputformat);
   if (image == NULL) {
-    mapscript_throw_exception("Unable to get the symbol image" TSRMLS_CC);
+    mapscript_throw_exception("Unable to get the symbol image");
     return;
   }
 
@@ -366,7 +366,7 @@ PHP_METHOD(symbolObj, getImage)
   if (msGetOutputFormatIndex(php_map->map, php_outputformat->outputformat->name) == -1)
     msAppendOutputFormat(php_map->map, php_outputformat->outputformat);
 
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
   } /* }}} */
 
 zend_function_entry symbol_functions[] = {
@@ -383,7 +383,7 @@ zend_function_entry symbol_functions[] = {
   }
 };
 
-void mapscript_create_symbol(symbolObj *symbol, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_symbol(symbolObj *symbol, parent_object parent, zval *return_value)
 {
   php_symbol_object * php_symbol;
   object_init_ex(return_value, mapscript_ce_symbol);
@@ -397,13 +397,13 @@ void mapscript_create_symbol(symbolObj *symbol, parent_object parent, zval *retu
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_symbol_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_symbol_create_object(zend_class_entry *ce)
 {
   php_symbol_object *php_symbol;
 
   php_symbol = ecalloc(1, sizeof(*php_symbol) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_symbol->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_symbol->zobj, ce);
   object_properties_init(&php_symbol->zobj, ce);
 
   php_symbol->zobj.handlers = &mapscript_symbol_object_handlers;
@@ -431,7 +431,7 @@ PHP_MINIT_FUNCTION(symbol)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "symbolObj", symbol_functions);
-  mapscript_ce_symbol = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_symbol = zend_register_internal_class(&ce);
 
   mapscript_ce_symbol->create_object = mapscript_symbol_create_object;
   mapscript_ce_symbol->ce_flags |= ZEND_ACC_FINAL;
@@ -444,7 +444,7 @@ PHP_MINIT_FUNCTION(symbol)
 }
 #else
 /* PHP5 */
-static void mapscript_symbol_object_destroy(void *object TSRMLS_DC)
+static void mapscript_symbol_object_destroy(void *object)
 {
   php_symbol_object *php_symbol = (php_symbol_object *)object;
 
@@ -457,7 +457,7 @@ static void mapscript_symbol_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_symbol_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_symbol_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_symbol_object *php_symbol;
@@ -465,7 +465,7 @@ static zend_object_value mapscript_symbol_object_new(zend_class_entry *ce TSRMLS
   MAPSCRIPT_ALLOC_OBJECT(php_symbol, php_symbol_object);
 
   retval = mapscript_object_new(&php_symbol->std, ce,
-                                &mapscript_symbol_object_destroy TSRMLS_CC);
+                                &mapscript_symbol_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_symbol->parent);
 

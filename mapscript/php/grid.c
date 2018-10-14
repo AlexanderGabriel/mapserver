@@ -59,7 +59,7 @@ PHP_METHOD(gridObj, __construct)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zlayer, mapscript_ce_layer) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -85,7 +85,7 @@ PHP_METHOD(gridObj, __construct)
     php_old_grid = MAPSCRIPT_OBJ(php_grid_object, php_layer->grid);
     php_old_grid->parent.child_ptr = NULL;
 #if PHP_VERSION_ID < 70000
-    zend_objects_store_del_ref(php_layer->grid TSRMLS_CC);
+    zend_objects_store_del_ref(php_layer->grid);
 #else
 /*
 	Z_SET_REFCOUNT(php_layer->grid, 0);
@@ -99,10 +99,10 @@ PHP_METHOD(gridObj, __construct)
   MAKE_STD_ZVAL(php_layer->grid);
   MAPSCRIPT_MAKE_PARENT(zlayer, &php_layer->grid);
 #if PHP_VERSION_ID < 70000
-  mapscript_create_grid((graticuleObj *)(php_layer->layer->layerinfo), parent, php_layer->grid TSRMLS_CC);
+  mapscript_create_grid((graticuleObj *)(php_layer->layer->layerinfo), parent, php_layer->grid);
   return_value_ptr = &php_layer->grid;
 #else
-  mapscript_create_grid((graticuleObj *)(php_layer->layer->layerinfo), parent, &php_layer->grid TSRMLS_CC);
+  mapscript_create_grid((graticuleObj *)(php_layer->layer->layerinfo), parent, &php_layer->grid);
  return_value =  &php_layer->grid;
 #endif
 }
@@ -116,7 +116,7 @@ PHP_METHOD(gridObj, __get)
   php_grid_object *php_grid;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -133,7 +133,7 @@ PHP_METHOD(gridObj, __get)
           else IF_GET_DOUBLE("maxinterval", php_grid->grid->maxincrement)
             else IF_GET_STRING("labelformat", php_grid->grid->labelformat)
               else {
-                mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                mapscript_throw_exception("Property '%s' does not exist in this object.", property);
               }
 }
 
@@ -146,7 +146,7 @@ PHP_METHOD(gridObj, __set)
   php_grid_object *php_grid;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -163,7 +163,7 @@ PHP_METHOD(gridObj, __set)
           else IF_SET_DOUBLE("maxinterval", php_grid->grid->maxincrement, value)
             else IF_SET_STRING("labelformat", php_grid->grid->labelformat, value)
               else {
-                mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                mapscript_throw_exception("Property '%s' does not exist in this object.", property);
               }
 }
 
@@ -176,7 +176,7 @@ zend_function_entry grid_functions[] = {
   }
 };
 
-void mapscript_create_grid(graticuleObj *grid, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_grid(graticuleObj *grid, parent_object parent, zval *return_value)
 {
   php_grid_object * php_grid;
   object_init_ex(return_value, mapscript_ce_grid);
@@ -189,13 +189,13 @@ void mapscript_create_grid(graticuleObj *grid, parent_object parent, zval *retur
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_grid_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_grid_create_object(zend_class_entry *ce)
 {
   php_grid_object *php_grid;
 
   php_grid = ecalloc(1, sizeof(*php_grid) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_grid->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_grid->zobj, ce);
   object_properties_init(&php_grid->zobj, ce);
 
   php_grid->zobj.handlers = &mapscript_grid_object_handlers;
@@ -223,7 +223,7 @@ PHP_MINIT_FUNCTION(grid)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "gridObj", grid_functions);
-  mapscript_ce_grid = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_grid = zend_register_internal_class(&ce);
 
   mapscript_ce_grid->create_object = mapscript_grid_create_object;
   mapscript_ce_grid->ce_flags |= ZEND_ACC_FINAL;
@@ -236,7 +236,7 @@ PHP_MINIT_FUNCTION(grid)
 }
 #else
 /* PHP5 */
-static void mapscript_grid_object_destroy(void *object TSRMLS_DC)
+static void mapscript_grid_object_destroy(void *object)
 {
   php_grid_object *php_grid = (php_grid_object *)object;
 
@@ -249,7 +249,7 @@ static void mapscript_grid_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_grid_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_grid_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_grid_object *php_grid;
@@ -257,7 +257,7 @@ static zend_object_value mapscript_grid_object_new(zend_class_entry *ce TSRMLS_D
   MAPSCRIPT_ALLOC_OBJECT(php_grid, php_grid_object);
 
   retval = mapscript_object_new(&php_grid->std, ce,
-                                &mapscript_grid_object_destroy TSRMLS_CC);
+                                &mapscript_grid_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_grid->parent);
 

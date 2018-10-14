@@ -65,7 +65,7 @@ ZEND_END_ARG_INFO()
    imageObj CANNOT be instanciated, this will throw an exception on use */
 PHP_METHOD(imageObj, __construct)
 {
-  mapscript_throw_exception("imageObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("imageObj cannot be constructed");
 }
 /* }}} */
 
@@ -77,7 +77,7 @@ PHP_METHOD(imageObj, __get)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -94,7 +94,7 @@ PHP_METHOD(imageObj, __get)
           else IF_GET_STRING("imageurl", php_image->image->imageurl)
             else IF_GET_STRING("imagetype", php_image->image->format->name)
               else {
-                mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                mapscript_throw_exception("Property '%s' does not exist in this object.", property);
               }
 }
 
@@ -107,7 +107,7 @@ PHP_METHOD(imageObj, __set)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -123,9 +123,9 @@ PHP_METHOD(imageObj, __set)
                 (STRING_EQUAL("resolution", property)) ||
                 (STRING_EQUAL("resolutionfactor", property)) ||
                 (STRING_EQUAL("height", property)) ) {
-        mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+        mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
       } else {
-        mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+        mapscript_throw_exception("Property '%s' does not exist in this object.", property);
       }
 }
 
@@ -153,7 +153,7 @@ PHP_METHOD(imageObj, saveWebImage)
   imageFile = msBuildPath(path, php_image->image->imagepath, imageFilename);
 
   if (msSaveImage(NULL, php_image->image, imageFile) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("Failed writing image to %s" TSRMLS_CC, imageFile);
+    mapscript_throw_mapserver_exception("Failed writing image to %s", imageFile);
     return;
   }
 
@@ -186,7 +186,7 @@ PHP_METHOD(imageObj, pasteImage)
   rasterBufferObj rb;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Ol|lll",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Ol|lll",
                             &zimage, mapscript_ce_image, &transparent,
                             &dstx, &dsty, &angle) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -195,14 +195,14 @@ PHP_METHOD(imageObj, pasteImage)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if  (ZEND_NUM_ARGS() == 3)
-    mapscript_report_php_error(E_WARNING, "dstX parameter given but not dstY" TSRMLS_CC);
+    mapscript_report_php_error(E_WARNING, "dstX parameter given but not dstY");
 
   php_image = MAPSCRIPT_OBJ_P(php_image_object, zobj);
   php_imageSrc = MAPSCRIPT_OBJ_P(php_image_object, zimage);
 
   if (!MS_RENDERER_PLUGIN(php_imageSrc->image->format) ||
       !MS_RENDERER_PLUGIN(php_image->image->format)) {
-    mapscript_throw_exception("PasteImage function should only be used with renderer plugin drivers." TSRMLS_CC);
+    mapscript_throw_exception("PasteImage function should only be used with renderer plugin drivers.");
     return;
   }
 
@@ -211,11 +211,11 @@ PHP_METHOD(imageObj, pasteImage)
   memset(&rb,0,sizeof(rasterBufferObj));
 
   if(MS_SUCCESS != renderer->getRasterBufferHandle(php_imageSrc->image, &rb)) {
-    mapscript_throw_exception("PasteImage failed to extract rasterbuffer handle" TSRMLS_CC);
+    mapscript_throw_exception("PasteImage failed to extract rasterbuffer handle");
     return;
   }
   if(MS_SUCCESS != renderer->mergeRasterBuffer(php_image->image, &rb, 1.0, 0, 0, dstx, dsty, rb.width, rb.height)) {
-    mapscript_throw_exception("PasteImage failed to merge raster buffer" TSRMLS_CC);
+    mapscript_throw_exception("PasteImage failed to merge raster buffer");
     return;
   }
 
@@ -269,7 +269,7 @@ PHP_METHOD(imageObj, saveImage)
   void *iptr=NULL;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|sO",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "|sO",
                             &filename, &filename_len,
                             &zmap, mapscript_ce_map) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -283,7 +283,7 @@ PHP_METHOD(imageObj, saveImage)
 
   if(filename_len > 0) {
     if ((status = msSaveImage((zmap ? php_map->map:NULL), php_image->image, filename) != MS_SUCCESS)) {
-      mapscript_throw_mapserver_exception("Failed writing image to %s" TSRMLS_CC, filename);
+      mapscript_throw_mapserver_exception("Failed writing image to %s", filename);
       return;
     }
 
@@ -296,11 +296,11 @@ PHP_METHOD(imageObj, saveImage)
   //handle changes in PHP 5.4.x
 #if PHP_VERSION_ID < 50399
   if (OG(ob_nesting_level)<=0) {
-    php_header(TSRMLS_C);
+    php_header();
   }
 #else
-  if (php_output_get_level(TSRMLS_C)<=0) {
-    php_header(TSRMLS_C);
+  if (php_output_get_level()<=0) {
+    php_header();
   }
 #endif
 
@@ -312,10 +312,10 @@ PHP_METHOD(imageObj, saveImage)
   }
 
   if (size == 0) {
-    mapscript_throw_mapserver_exception("Failed writing image to stdout" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Failed writing image to stdout");
     return;
   } else {
-    php_write(iptr, size TSRMLS_CC);
+    php_write(iptr, size);
     status = MS_SUCCESS;
     /* status = size;  why should we return the size ?? */
     msFree(iptr);
@@ -338,7 +338,7 @@ zend_function_entry image_functions[] = {
 };
 
 
-void mapscript_create_image(imageObj *image, zval *return_value TSRMLS_DC)
+void mapscript_create_image(imageObj *image, zval *return_value)
 {
   php_image_object * php_image;
   object_init_ex(return_value, mapscript_ce_image);
@@ -348,13 +348,13 @@ void mapscript_create_image(imageObj *image, zval *return_value TSRMLS_DC)
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_image_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_image_create_object(zend_class_entry *ce)
 {
   php_image_object *php_image;
 
   php_image = ecalloc(1, sizeof(*php_image) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_image->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_image->zobj, ce);
   object_properties_init(&php_image->zobj, ce);
 
   php_image->zobj.handlers = &mapscript_image_object_handlers;
@@ -378,7 +378,7 @@ PHP_MINIT_FUNCTION(image)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "imageObj", image_functions);
-  mapscript_ce_image = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_image = zend_register_internal_class(&ce);
 
   mapscript_ce_image->create_object = mapscript_image_create_object;
   mapscript_ce_image->ce_flags |= ZEND_ACC_FINAL;
@@ -391,7 +391,7 @@ PHP_MINIT_FUNCTION(image)
 }
 #else
 /* PHP5 */
-static void mapscript_image_object_destroy(void *object TSRMLS_DC)
+static void mapscript_image_object_destroy(void *object)
 {
   php_image_object *php_image = (php_image_object *)object;
 
@@ -402,7 +402,7 @@ static void mapscript_image_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_image_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_image_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_image_object *php_image;
@@ -410,7 +410,7 @@ static zend_object_value mapscript_image_object_new(zend_class_entry *ce TSRMLS_
   MAPSCRIPT_ALLOC_OBJECT(php_image, php_image_object);
 
   retval = mapscript_object_new(&php_image->std, ce,
-                                &mapscript_image_object_destroy TSRMLS_CC);
+                                &mapscript_image_object_destroy);
 
   return retval;
 }

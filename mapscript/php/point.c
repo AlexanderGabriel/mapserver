@@ -100,7 +100,7 @@ PHP_METHOD(pointObj, __construct)
   php_point = MAPSCRIPT_OBJ_P(php_point_object, getThis());
 
   if ((php_point->point = pointObj_new()) == NULL) {
-    mapscript_throw_exception("Unable to construct pointObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct pointObj.");
     return;
   }
 
@@ -121,7 +121,7 @@ PHP_METHOD(pointObj, __get)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -137,7 +137,7 @@ PHP_METHOD(pointObj, __get)
       else IF_GET_DOUBLE("m", php_point->point->m)
 #endif
         else {
-          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
         }
 }
 
@@ -150,7 +150,7 @@ PHP_METHOD(pointObj, __set)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -166,7 +166,7 @@ PHP_METHOD(pointObj, __set)
       else IF_SET_DOUBLE("m", php_point->point->m, value)
 #endif
         else {
-          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
         }
 }
 
@@ -180,7 +180,7 @@ PHP_METHOD(pointObj, setXY)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dd|d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "dd|d",
                             &x, &y, &m) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -212,7 +212,7 @@ PHP_METHOD(pointObj, setXYZ)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ddd|d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ddd|d",
                             &x, &y, &z, &m) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -248,7 +248,7 @@ PHP_METHOD(pointObj, project)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OO",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OO",
                             &zobj_proj_in, mapscript_ce_projection,
                             &zobj_proj_out, mapscript_ce_projection) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -262,7 +262,7 @@ PHP_METHOD(pointObj, project)
 
   status = pointObj_project(php_point->point, php_proj_in->projection, php_proj_out->projection);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -279,7 +279,7 @@ PHP_METHOD(pointObj, distanceToPoint)
   double distance = -1;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zobj_point2, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -306,7 +306,7 @@ PHP_METHOD(pointObj, distanceToLine)
   double distance = -1;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OO",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OO",
                             &zobj_line_point, mapscript_ce_point,
                             &zobj_line_point2, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -335,7 +335,7 @@ PHP_METHOD(pointObj, distanceToShape)
   double distance = -1;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -367,7 +367,7 @@ PHP_METHOD(pointObj, draw)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OOOl|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OOOl|s",
                             &zmap, mapscript_ce_map,
                             &zlayer, mapscript_ce_layer,
                             &zimage, mapscript_ce_image,
@@ -384,7 +384,7 @@ PHP_METHOD(pointObj, draw)
 
   if ((status = pointObj_draw(php_point->point, php_map->map, php_layer->layer, php_image->image,
                               classIndex, text)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -409,7 +409,7 @@ zend_function_entry point_functions[] = {
 };
 
 
-void mapscript_create_point(pointObj *point, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_point(pointObj *point, parent_object parent, zval *return_value)
 {
   php_point_object * php_point;
   object_init_ex(return_value, mapscript_ce_point);
@@ -425,13 +425,13 @@ void mapscript_create_point(pointObj *point, parent_object parent, zval *return_
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_point_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_point_create_object(zend_class_entry *ce)
 {
   php_point_object *php_point;
 
   php_point = ecalloc(1, sizeof(*php_point) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_point->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_point->zobj, ce);
   object_properties_init(&php_point->zobj, ce);
 
   php_point->zobj.handlers = &mapscript_point_object_handlers;
@@ -470,7 +470,7 @@ static zend_object* mapscript_point_clone_object(zval *zobj)
   zend_objects_clone_members(&php_point_new->zobj, &php_point_old->zobj);
 
   if ((php_point_new->point = pointObj_new()) == NULL) {
-    mapscript_throw_exception("Unable to construct pointObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct pointObj.");
     return NULL;
   }
   memcpy(php_point_new->point, php_point_old->point, sizeof(pointObj));
@@ -483,7 +483,7 @@ PHP_MINIT_FUNCTION(point)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "pointObj", point_functions);
-  mapscript_ce_point = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_point = zend_register_internal_class(&ce);
 
   mapscript_ce_point->create_object = mapscript_point_create_object;
   mapscript_ce_point->ce_flags |= ZEND_ACC_FINAL;
@@ -498,7 +498,7 @@ PHP_MINIT_FUNCTION(point)
 #else
 /* PHP5 */
 
-static void mapscript_point_object_destroy(void *object TSRMLS_DC)
+static void mapscript_point_object_destroy(void *object)
 {
   php_point_object *php_point = (php_point_object *)object;
 
@@ -513,7 +513,7 @@ static void mapscript_point_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_point_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_point_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_point_object *php_point;
@@ -521,7 +521,7 @@ static zend_object_value mapscript_point_object_new(zend_class_entry *ce TSRMLS_
   MAPSCRIPT_ALLOC_OBJECT(php_point, php_point_object);
 
   retval = mapscript_object_new(&php_point->std, ce,
-                                &mapscript_point_object_destroy TSRMLS_CC);
+                                &mapscript_point_object_destroy);
 
   php_point->is_ref = 0;
   MAPSCRIPT_INIT_PARENT(php_point->parent);

@@ -47,7 +47,7 @@ ZEND_END_ARG_INFO()
    labelLeaderObj CANNOT be instanciated, this will throw an exception on use */
 PHP_METHOD(labelLeaderObj, __construct)
 {
-  mapscript_throw_exception("labelLeaderObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("labelLeaderObj cannot be constructed");
 }
 /* }}} */
 
@@ -59,7 +59,7 @@ PHP_METHOD(labelLeaderObj, __get)
   php_labelleader_object *php_labelleader;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -71,7 +71,7 @@ PHP_METHOD(labelLeaderObj, __get)
   IF_GET_LONG("maxdistance", php_labelleader->labelleader->maxdistance)
   else IF_GET_LONG("gridstep", php_labelleader->labelleader->gridstep)
     else {
-      mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+      mapscript_throw_exception("Property '%s' does not exist in this object.", property);
     }
 }
 
@@ -82,7 +82,7 @@ PHP_METHOD(labelLeaderObj, __set)
   zval *value;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -91,9 +91,9 @@ PHP_METHOD(labelLeaderObj, __set)
 
   if ( (STRING_EQUAL("maxdistance", property)) ||
        (STRING_EQUAL("gridstep", property)) ) {
-    mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
   } else {
-    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
   }
 }
 
@@ -105,7 +105,7 @@ zend_function_entry labelleader_functions[] = {
   }
 };
 
-void mapscript_create_labelleader(labelLeaderObj *labelleader, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_labelleader(labelLeaderObj *labelleader, parent_object parent, zval *return_value)
 {
   php_labelleader_object * php_labelleader;
   object_init_ex(return_value, mapscript_ce_labelleader);
@@ -118,13 +118,13 @@ void mapscript_create_labelleader(labelLeaderObj *labelleader, parent_object par
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_labelleader_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_labelleader_create_object(zend_class_entry *ce)
 {
   php_labelleader_object *php_labelleader;
 
   php_labelleader = ecalloc(1, sizeof(*php_labelleader) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_labelleader->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_labelleader->zobj, ce);
   object_properties_init(&php_labelleader->zobj, ce);
 
   php_labelleader->zobj.handlers = &mapscript_labelleader_object_handlers;
@@ -152,7 +152,7 @@ PHP_MINIT_FUNCTION(labelleader)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "labelLeaderObj", labelleader_functions);
-  mapscript_ce_labelleader = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_labelleader = zend_register_internal_class(&ce);
 
   mapscript_ce_labelleader->create_object = mapscript_labelleader_create_object;
   mapscript_ce_labelleader->ce_flags |= ZEND_ACC_FINAL;
@@ -166,7 +166,7 @@ PHP_MINIT_FUNCTION(labelleader)
 #else
 /* PHP5 */
 
-static void mapscript_labelleader_object_destroy(void *object TSRMLS_DC)
+static void mapscript_labelleader_object_destroy(void *object)
 {
   php_labelleader_object *php_labelleader = (php_labelleader_object *)object;
 
@@ -179,7 +179,7 @@ static void mapscript_labelleader_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_labelleader_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_labelleader_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_labelleader_object *php_labelleader;
@@ -187,7 +187,7 @@ static zend_object_value mapscript_labelleader_object_new(zend_class_entry *ce T
   MAPSCRIPT_ALLOC_OBJECT(php_labelleader, php_labelleader_object);
 
   retval = mapscript_object_new(&php_labelleader->std, ce,
-                                &mapscript_labelleader_object_destroy TSRMLS_CC);
+                                &mapscript_labelleader_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_labelleader->parent);
 

@@ -86,7 +86,7 @@ PHP_METHOD(rectObj, __construct)
   php_rect = MAPSCRIPT_OBJ_P(php_rect_object, getThis());
 
   if ((php_rect->rect = rectObj_new()) == NULL) {
-    mapscript_throw_exception("Unable to construct rectObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct rectObj.");
     return;
   }
 }
@@ -100,7 +100,7 @@ PHP_METHOD(rectObj, __get)
   php_rect_object *php_rect;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -114,7 +114,7 @@ PHP_METHOD(rectObj, __get)
     else IF_GET_DOUBLE("maxx", php_rect->rect->maxx)
       else IF_GET_DOUBLE("maxy", php_rect->rect->maxy)
         else {
-          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
         }
 }
 
@@ -134,7 +134,7 @@ PHP_METHOD(rectObj, draw)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OOOl|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OOOl|s",
                             &zmap, mapscript_ce_map,
                             &zlayer, mapscript_ce_layer,
                             &zimage, mapscript_ce_image,
@@ -151,7 +151,7 @@ PHP_METHOD(rectObj, draw)
 
   if ((status = rectObj_draw(php_rect->rect, php_map->map, php_layer->layer, php_image->image,
                              classIndex, text)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -168,7 +168,7 @@ PHP_METHOD(rectObj, __set)
   php_rect_object *php_rect;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -182,7 +182,7 @@ PHP_METHOD(rectObj, __set)
     else IF_SET_DOUBLE("maxx", php_rect->rect->maxx, value)
       else IF_SET_DOUBLE("maxy", php_rect->rect->maxy, value)
         else {
-          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
         }
 }
 
@@ -197,7 +197,7 @@ PHP_METHOD(rectObj, project)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OO",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OO",
                             &zobj_proj_in, mapscript_ce_projection,
                             &zobj_proj_out, mapscript_ce_projection) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -211,7 +211,7 @@ PHP_METHOD(rectObj, project)
 
   status = rectObj_project(php_rect->rect, php_proj_in->projection, php_proj_out->projection);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -227,7 +227,7 @@ PHP_METHOD(rectObj, setExtent)
   php_rect_object *php_rect;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dddd",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "dddd",
                             &minx, &miny, &maxx, &maxy) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -255,7 +255,7 @@ PHP_METHOD(rectObj, fit)
   php_rect_object *php_rect;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll",
                             &width, &height) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -289,7 +289,7 @@ PHP_METHOD(rectObj, getCenter)
 
   center = (pointObj *)calloc(1, sizeof(pointObj));
   if (!center) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     RETURN_NULL();
   }
 
@@ -298,7 +298,7 @@ PHP_METHOD(rectObj, getCenter)
 
   /* Return result object */
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_point(center, parent, return_value TSRMLS_CC);
+  mapscript_create_point(center, parent, return_value);
 }
 /* }}} */
 
@@ -317,7 +317,7 @@ zend_function_entry rect_functions[] = {
 };
 
 
-void mapscript_create_rect(rectObj *rect, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_rect(rectObj *rect, parent_object parent, zval *return_value)
 {
   php_rect_object * php_rect;
   object_init_ex(return_value, mapscript_ce_rect);
@@ -333,13 +333,13 @@ void mapscript_create_rect(rectObj *rect, parent_object parent, zval *return_val
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_rect_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_rect_create_object(zend_class_entry *ce)
 {
   php_rect_object *php_rect;
 
   php_rect = ecalloc(1, sizeof(*php_rect) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_rect->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_rect->zobj, ce);
   object_properties_init(&php_rect->zobj, ce);
 
   php_rect->zobj.handlers = &mapscript_rect_object_handlers;
@@ -378,7 +378,7 @@ static zend_object* mapscript_rect_clone_object(zval *zobj)
   zend_objects_clone_members(&php_rect_new->zobj, &php_rect_old->zobj);
 
   if ((php_rect_new->rect = rectObj_new()) == NULL) {
-    mapscript_throw_exception("Unable to construct rectObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct rectObj.");
     return NULL;
   }
   memcpy(php_rect_new->rect, php_rect_old->rect, sizeof(rectObj));
@@ -391,7 +391,7 @@ PHP_MINIT_FUNCTION(rect)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "rectObj", rect_functions);
-  mapscript_ce_rect = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_rect = zend_register_internal_class(&ce);
 
   mapscript_ce_rect->create_object = mapscript_rect_create_object;
   mapscript_ce_rect->ce_flags |= ZEND_ACC_FINAL;
@@ -405,7 +405,7 @@ PHP_MINIT_FUNCTION(rect)
 }
 #else
 /* PHP5 */
-static void mapscript_rect_object_destroy(void *object TSRMLS_DC)
+static void mapscript_rect_object_destroy(void *object)
 {
   php_rect_object *php_rect = (php_rect_object *)object;
 
@@ -420,7 +420,7 @@ static void mapscript_rect_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_rect_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_rect_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_rect_object *php_rect;
@@ -428,7 +428,7 @@ static zend_object_value mapscript_rect_object_new(zend_class_entry *ce TSRMLS_D
   MAPSCRIPT_ALLOC_OBJECT(php_rect, php_rect_object);
 
   retval = mapscript_object_new(&php_rect->std, ce,
-                                &mapscript_rect_object_destroy TSRMLS_CC);
+                                &mapscript_rect_object_destroy);
 
   php_rect->is_ref = 0;
   MAPSCRIPT_INIT_PARENT(php_rect->parent)

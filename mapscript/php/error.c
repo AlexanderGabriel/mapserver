@@ -60,7 +60,7 @@ ZEND_END_ARG_INFO()
    errorObj CANNOT be instanciated, this will throw an exception on use */
 PHP_METHOD(errorObj, __construct)
 {
-  mapscript_throw_exception("errorObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("errorObj cannot be constructed");
 }
 /* }}} */
 
@@ -73,7 +73,7 @@ PHP_METHOD(errorObj, __get)
   php_error_object *php_errobj;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -87,7 +87,7 @@ PHP_METHOD(errorObj, __get)
     else IF_GET_STRING("message", php_errobj->error->message)
       else IF_GET_LONG("isreported", php_errobj->error->isreported)
         else {
-          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
         }
 }
 
@@ -100,7 +100,7 @@ PHP_METHOD(errorObj, __set)
   /* php_error_object *php_errobj; */
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -113,9 +113,9 @@ PHP_METHOD(errorObj, __set)
        (STRING_EQUAL("routine", property)) ||
        (STRING_EQUAL("isreported", property)) ||
        (STRING_EQUAL("message", property))) {
-    mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
   } else {
-    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
   }
 }
 
@@ -144,7 +144,7 @@ PHP_METHOD(errorObj, next)
   error = msGetErrorObj();
   while(error != php_errobj->error) {
     if (error->next == NULL) {
-      mapscript_throw_exception("Trying to access an errorObj that has expired." TSRMLS_CC);
+      mapscript_throw_exception("Trying to access an errorObj that has expired.");
       return;
     }
     error = error->next;
@@ -166,7 +166,7 @@ zend_function_entry error_functions[] = {
   }
 };
 
-void mapscript_create_error(errorObj *error, zval *return_value TSRMLS_DC)
+void mapscript_create_error(errorObj *error, zval *return_value)
 {
   php_error_object * php_errobj;
   object_init_ex(return_value, mapscript_ce_error);
@@ -176,13 +176,13 @@ void mapscript_create_error(errorObj *error, zval *return_value TSRMLS_DC)
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_error_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_error_create_object(zend_class_entry *ce)
 {
   php_error_object *php_errobj;
 
   php_errobj = ecalloc(1, sizeof(*php_errobj) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_errobj->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_errobj->zobj, ce);
   object_properties_init(&php_errobj->zobj, ce);
 
   php_errobj->zobj.handlers = &mapscript_error_object_handlers;
@@ -206,7 +206,7 @@ PHP_MINIT_FUNCTION(error)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "errorObj", error_functions);
-  mapscript_ce_error = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_error = zend_register_internal_class(&ce);
 
   mapscript_ce_error->create_object = mapscript_error_create_object;
   mapscript_ce_error->ce_flags |= ZEND_ACC_FINAL;
@@ -219,7 +219,7 @@ PHP_MINIT_FUNCTION(error)
 }
 #else
 /* PHP5 */
-static void mapscript_error_object_destroy(void *object TSRMLS_DC)
+static void mapscript_error_object_destroy(void *object)
 {
   php_error_object *php_errobj = (php_error_object *)object;
 
@@ -230,7 +230,7 @@ static void mapscript_error_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_error_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_error_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_error_object *php_errobj;
@@ -238,7 +238,7 @@ static zend_object_value mapscript_error_object_new(zend_class_entry *ce TSRMLS_
   MAPSCRIPT_ALLOC_OBJECT(php_errobj, php_error_object);
 
   retval = mapscript_object_new(&php_errobj->std, ce,
-                                &mapscript_error_object_destroy TSRMLS_CC);
+                                &mapscript_error_object_destroy);
 
   return retval;
 }

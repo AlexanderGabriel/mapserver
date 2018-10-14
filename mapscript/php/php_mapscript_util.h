@@ -38,13 +38,6 @@
 
 #if PHP_VERSION_ID < 70000
 
-#if ZEND_MODULE_API_NO < 20010901
-#define TSRMLS_D  void
-#define TSRMLS_DC
-#define TSRMLS_C
-#define TSRMLS_CC
-#endif
-
 /* Add pseudo refcount macros for PHP version < 5.3 */
 #ifndef Z_REFCOUNT_PP
 
@@ -134,7 +127,7 @@ static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isre
 
 #define MAPSCRIPT_REGISTER_CLASS(name, functions, class_entry, constructor) \
     INIT_CLASS_ENTRY(ce, name, functions); \
-    class_entry = zend_register_internal_class(&ce TSRMLS_CC); \
+    class_entry = zend_register_internal_class(&ce); \
     class_entry->create_object = constructor;
 
 #define MAPSCRIPT_ALLOC_OBJECT(zobj, object_type)  \
@@ -264,7 +257,7 @@ static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isre
     {   \
         if (Z_ISUNDEF(php_object_storage)) {                             \
             mapscript_fetch_object(mapscript_ce, zobj, NULL, (void*)internal_object, \
-                                   &php_object_storage TSRMLS_CC); \
+                                   &php_object_storage); \
         }                                                               \
         RETURN_ZVAL(&php_object_storage, 1, 0);                          \
     }
@@ -274,7 +267,7 @@ static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isre
     {   \
         if (!php_object_storage) {                             \
             mapscript_fetch_object(mapscript_ce, zobj, NULL, (void*)internal_object, \
-                                   &php_object_storage TSRMLS_CC); \
+                                   &php_object_storage); \
         }                                                               \
         RETURN_ZVAL(php_object_storage, 1, 0);                          \
     }
@@ -284,13 +277,13 @@ static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isre
 #define CHECK_OBJECT(mapscript_ce, php_object_storage, internal_object) \
     if (Z_ISUNDEF(php_object_storage)) {                             \
         mapscript_fetch_object(mapscript_ce, zobj, NULL, (void*)internal_object, \
-                           &php_object_storage TSRMLS_CC); \
+                           &php_object_storage); \
     }
 #else
 #define CHECK_OBJECT(mapscript_ce, php_object_storage, internal_object) \
     if (!php_object_storage) {                             \
         mapscript_fetch_object(mapscript_ce, zobj, NULL, (void*)internal_object, \
-                           &php_object_storage TSRMLS_CC); \
+                           &php_object_storage); \
     }
 #endif
 
@@ -331,7 +324,7 @@ static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isre
         convert_to_long(value); \
         /* validate the color value */ \
         if (Z_LVAL_P(value) < 0 || Z_LVAL_P(value) > 255) {             \
-            mapscript_throw_exception("Invalid color value. It must be between 0 and 255." TSRMLS_CC); \
+            mapscript_throw_exception("Invalid color value. It must be between 0 and 255."); \
             return;   \
         }             \
         internal = Z_LVAL_P(value);             \
@@ -340,7 +333,7 @@ static zend_always_inline zend_bool zval_set_isref_to_p(zval* pz, zend_bool isre
 #if PHP_VERSION_ID < 70000
 zend_object_value mapscript_object_new(zend_object *zobj,
                                        zend_class_entry *ce,
-                                       void (*zend_objects_free_object) TSRMLS_DC);
+                                       void (*zend_objects_free_object));
 #endif /* PHP_VERSION_ID < 70000 */
 
 int mapscript_extract_associative_array(HashTable *php, char **array);

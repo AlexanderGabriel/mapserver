@@ -66,7 +66,7 @@ ZEND_END_ARG_INFO()
    Create a new hashtableObj instance. */
 PHP_METHOD(hashtableObj, __construct)
 {
-  mapscript_throw_exception("hashTableObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("hashTableObj cannot be constructed");
 }
 /* }}} */
 
@@ -78,7 +78,7 @@ PHP_METHOD(hashtableObj, __get)
   php_hashtable_object *php_hashtable;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -89,7 +89,7 @@ PHP_METHOD(hashtableObj, __get)
 
   IF_GET_LONG("numitems", php_hashtable->hashtable->numitems)
   else {
-    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
   }
 }
 
@@ -100,7 +100,7 @@ PHP_METHOD(hashtableObj, __set)
   zval *value;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -108,9 +108,9 @@ PHP_METHOD(hashtableObj, __set)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if ( (STRING_EQUAL("numitems", property))) {
-    mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
   } else {
-    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
   }
 }
 
@@ -125,7 +125,7 @@ PHP_METHOD(hashtableObj, get)
   php_hashtable_object *php_hashtable;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &key, &key_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -154,7 +154,7 @@ PHP_METHOD(hashtableObj, set)
   php_hashtable_object *php_hashtable;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
                             &key, &key_len, &value, &value_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -164,7 +164,7 @@ PHP_METHOD(hashtableObj, set)
   php_hashtable = MAPSCRIPT_OBJ_P(php_hashtable_object, zobj);
 
   if ((status = hashTableObj_set(php_hashtable->hashtable, key, value)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -183,7 +183,7 @@ PHP_METHOD(hashtableObj, remove)
   php_hashtable_object *php_hashtable;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &key, &key_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -193,7 +193,7 @@ PHP_METHOD(hashtableObj, remove)
   php_hashtable = MAPSCRIPT_OBJ_P(php_hashtable_object, zobj);
 
   if ((status = hashTableObj_remove(php_hashtable->hashtable, key)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -233,7 +233,7 @@ PHP_METHOD(hashtableObj, nextKey)
   php_hashtable_object *php_hashtable;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s!",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s!",
                             &key, &key_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -264,7 +264,7 @@ zend_function_entry hashtable_functions[] = {
   }
 };
 
-void mapscript_create_hashtable(hashTableObj *hashtable, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_hashtable(hashTableObj *hashtable, parent_object parent, zval *return_value)
 {
   php_hashtable_object * php_hashtable;
   object_init_ex(return_value, mapscript_ce_hashtable);
@@ -278,13 +278,13 @@ void mapscript_create_hashtable(hashTableObj *hashtable, parent_object parent, z
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_hashtable_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_hashtable_create_object(zend_class_entry *ce)
 {
   php_hashtable_object *php_hashtable;
 
   php_hashtable = ecalloc(1, sizeof(*php_hashtable) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_hashtable->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_hashtable->zobj, ce);
   object_properties_init(&php_hashtable->zobj, ce);
 
   php_hashtable->zobj.handlers = &mapscript_hashtable_object_handlers;
@@ -312,7 +312,7 @@ PHP_MINIT_FUNCTION(hashtable)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "hashTableObj", hashtable_functions);
-  mapscript_ce_hashtable = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_hashtable = zend_register_internal_class(&ce);
 
   mapscript_ce_hashtable->create_object = mapscript_hashtable_create_object;
   mapscript_ce_hashtable->ce_flags |= ZEND_ACC_FINAL;
@@ -325,7 +325,7 @@ PHP_MINIT_FUNCTION(hashtable)
 }
 #else
 /* PHP5 */
-static void mapscript_hashtable_object_destroy(void *object TSRMLS_DC)
+static void mapscript_hashtable_object_destroy(void *object)
 {
   php_hashtable_object *php_hashtable = (php_hashtable_object *)object;
 
@@ -338,7 +338,7 @@ static void mapscript_hashtable_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_hashtable_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_hashtable_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_hashtable_object *php_hashtable;
@@ -346,7 +346,7 @@ static zend_object_value mapscript_hashtable_object_new(zend_class_entry *ce TSR
   MAPSCRIPT_ALLOC_OBJECT(php_hashtable, php_hashtable_object);
 
   retval = mapscript_object_new(&php_hashtable->std, ce,
-                                &mapscript_hashtable_object_destroy TSRMLS_CC);
+                                &mapscript_hashtable_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_hashtable->parent);
 
