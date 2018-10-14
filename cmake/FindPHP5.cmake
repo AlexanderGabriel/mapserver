@@ -33,7 +33,7 @@ endif(WIN32)
 
 find_library(PHP5_LIBRARY
    NAMES php5ts.lib php7ts.lib php5.lib php7.lib
-   PATHS /sw /opt/local C:\php-sdk\phpmaster\vc15\x64\php-src\Release_TS C:\php-sdk\phpmaster\vc15\x64\php-src\Release C:\php-sdk\phpmaster\vc15\x64\php-src\x64\Release C:\php-sdk\phpmaster\vc15\x64\php-src\x64\Release_TS
+   PATHS /sw /opt/local C:/php-sdk/phpmaster/vc15/x64/php-src/Release_TS C:/php-sdk/phpmaster/vc15/x64/php-src/Release C:/php-sdk/phpmaster/vc15/x64/php-src/x64/Release C:/php-sdk/phpmaster/vc15/x64/php-src/x64/Release_TS
 )
   
 FIND_PATH(PHP5_FOUND_INCLUDE_PATH main/php.h
