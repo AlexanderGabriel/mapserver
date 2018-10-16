@@ -108,13 +108,13 @@ int readPostBody( cgiRequestObj *request, char **data )
   return MS_SUCCESS;
 }
 
-static char* msGetEnv(const char *name, void* thread_context)
+static char* msGetEnv(const char *name)
 {
   return getenv(name);
 }
 
 int loadParams(cgiRequestObj *request,
-               char* (*getenv2)(const char*, void* thread_context),
+               char* (*getenv2)(const char*),
                char *raw_post_data,
                ms_uint32 raw_post_data_length,
                void* thread_context)
@@ -127,7 +127,7 @@ int loadParams(cgiRequestObj *request,
   if (getenv2==NULL)
     getenv2 = &msGetEnv;
 
-  if(getenv2("REQUEST_METHOD", thread_context)==NULL) {
+  if(getenv2("REQUEST_METHOD")==NULL) {
     msIO_printf("This script can only be used to decode form results and \n");
     msIO_printf("should be initiated as a CGI process via a httpd server.\n");
     msIO_printf("For other options please try using the --help switch.\n");
@@ -136,12 +136,12 @@ int loadParams(cgiRequestObj *request,
 
   debuglevel = (int)msGetGlobalDebugLevel();
 
-  if(strcmp(getenv2("REQUEST_METHOD", thread_context),"POST") == 0) { /* we've got a post from a form */
+  if(strcmp(getenv2("REQUEST_METHOD"),"POST") == 0) { /* we've got a post from a form */
     char *post_data;
     int data_len;
     request->type = MS_POST_REQUEST;
 
-    s = getenv2("CONTENT_TYPE", thread_context);
+    s = getenv2("CONTENT_TYPE");
     if (s != NULL)
       request->contenttype = msStrdup(s);
     /* we've to set default Content-Type which is
@@ -182,7 +182,7 @@ int loadParams(cgiRequestObj *request,
 
     /* check the QUERY_STRING even in the post request since it can contain
        information. Eg a wfs request with  */
-    s = getenv2("QUERY_STRING", thread_context);
+    s = getenv2("QUERY_STRING");
     if(s) {
       if (debuglevel >= MS_DEBUGLEVEL_DEBUG)
         msDebug("loadParams() QUERY_STRING: %s\n", s);
@@ -202,10 +202,10 @@ int loadParams(cgiRequestObj *request,
       }
     }
   } else {
-    if(strcmp(getenv2("REQUEST_METHOD", thread_context),"GET") == 0) { /* we've got a get request */
+    if(strcmp(getenv2("REQUEST_METHOD"),"GET") == 0) { /* we've got a get request */
       request->type = MS_GET_REQUEST;
 
-      s = getenv2("QUERY_STRING", thread_context);
+      s = getenv2("QUERY_STRING");
       if(s == NULL) {
         msIO_setHeader("Content-Type","text/html");
         msIO_sendHeaders();
@@ -246,7 +246,7 @@ int loadParams(cgiRequestObj *request,
   }
 
   /* check for any available cookies */
-  s = getenv2("HTTP_COOKIE", thread_context);
+  s = getenv2("HTTP_COOKIE");
   if(s != NULL) {
     httpCookie = msStrdup(s);
     request->httpcookiedata = msStrdup(s);

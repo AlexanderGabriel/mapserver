@@ -1816,7 +1816,7 @@ cgiRequestObj *cgirequestObj_new()
 }
 
 int cgirequestObj_loadParams(cgiRequestObj *self,
-                             char* (*getenv2)(const char*, void* thread_context),
+                             char* (*getenv2)(const char*),
                              char *raw_post_data,
                              ms_uint32 raw_post_data_length,
                              void* thread_context)

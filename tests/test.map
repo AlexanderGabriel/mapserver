@@ -9,7 +9,7 @@ MAP
   SIZE 200 200
   FONTSET "fonts.txt"
   SYMBOLSET "symbols.txt"
-
+   CONFIG "PROJ_LIB" "C:/projects/mapserver-sdk/release-1911-x64/bin/proj/SHARE" 
   SCALEBAR
     STATUS EMBED
     POSTLABELCACHE TRUE
@@ -42,6 +42,8 @@ MAP
       "key4" "value4"
       "ows_enable_request" "*"
     END
+    IMAGEPATH "C:/dev/Apache24/cgi-bin/images/"    
+    IMAGEURL "https://alegab-pc.fritz.box/cgi-bin/images/"
   END
 
   PROJECTION
