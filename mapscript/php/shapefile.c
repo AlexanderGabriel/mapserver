@@ -86,7 +86,7 @@ PHP_METHOD(shapeFileObj, __construct)
   long type;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl",
                             &filename, &filename_len, &type) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -98,7 +98,7 @@ PHP_METHOD(shapeFileObj, __construct)
   php_shapefile->shapefile = shapefileObj_new(filename, type);
 
   if (php_shapefile->shapefile == NULL) {
-    mapscript_throw_mapserver_exception("Failed to open shapefile %s" TSRMLS_CC, filename);
+    mapscript_throw_mapserver_exception("Failed to open shapefile %s", filename);
     return;
   }
 }
@@ -112,7 +112,7 @@ PHP_METHOD(shapeFileObj, __get)
   php_shapefile_object *php_shapefile;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -128,7 +128,7 @@ PHP_METHOD(shapeFileObj, __get)
         else IF_GET_STRING("source", php_shapefile->shapefile->source)
           else IF_GET_OBJECT("bounds", mapscript_ce_rect, php_shapefile->bounds, &php_shapefile->shapefile->bounds)
             else {
-              mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+              mapscript_throw_exception("Property '%s' does not exist in this object.", property);
             }
 }
 
@@ -139,7 +139,7 @@ PHP_METHOD(shapeFileObj, __set)
   zval *value;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -152,9 +152,9 @@ PHP_METHOD(shapeFileObj, __set)
        (STRING_EQUAL("isopen", property)) ||
        (STRING_EQUAL("lastshape", property)) ||
        (STRING_EQUAL("bounds", property)) ) {
-    mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
   } else {
-    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
   }
 }
 
@@ -169,7 +169,7 @@ PHP_METHOD(shapeFileObj, getShape)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -183,18 +183,18 @@ PHP_METHOD(shapeFileObj, getShape)
    * at this point since it will be set by SHPReadShape().
    */
   if ((shape = shapeObj_new(MS_SHAPE_NULL)) == NULL) {
-    mapscript_throw_mapserver_exception("Failed creating new shape (out of memory?)" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Failed creating new shape (out of memory?)");
     return;
   }
 
   if (shapefileObj_get(php_shapefile->shapefile, index, shape) != MS_SUCCESS) {
     shapeObj_destroy(shape);
-    mapscript_throw_mapserver_exception("Failed reading shape %ld." TSRMLS_CC, index);
+    mapscript_throw_mapserver_exception("Failed reading shape %ld.", index);
     return;
   }
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -209,7 +209,7 @@ PHP_METHOD(shapeFileObj, getPoint)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -224,19 +224,19 @@ PHP_METHOD(shapeFileObj, getPoint)
    */
   /* Create a new PointObj to hold the result */
   if ((point = pointObj_new()) == NULL) {
-    mapscript_throw_mapserver_exception("Failed creating new point (out of memory?)" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Failed creating new point (out of memory?)");
     return;
   }
 
   /* Read from the file */
   if (shapefileObj_getPoint(php_shapefile->shapefile, index, point) != MS_SUCCESS) {
     pointObj_destroy(point);
-    mapscript_throw_mapserver_exception("Failed reading point %ld." TSRMLS_CC, index);
+    mapscript_throw_mapserver_exception("Failed reading point %ld.", index);
     return;
   }
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_point(point, parent, return_value TSRMLS_CC);
+  mapscript_create_point(point, parent, return_value);
 }
 /* }}} */
 
@@ -252,7 +252,7 @@ PHP_METHOD(shapeFileObj, getExtent)
   parent_object p;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -263,7 +263,7 @@ PHP_METHOD(shapeFileObj, getExtent)
 
   /* Create a new rectObj to hold the result */
   if ((rect = rectObj_new()) == NULL) {
-    mapscript_throw_mapserver_exception("Failed creating new rectObj (out of memory?)" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Failed creating new rectObj (out of memory?)");
     return;
   }
 
@@ -274,7 +274,7 @@ PHP_METHOD(shapeFileObj, getExtent)
 
   /* Return rectObj */
   MAPSCRIPT_INIT_PARENT(p);
-  mapscript_create_rect(rect, p, return_value TSRMLS_CC);
+  mapscript_create_rect(rect, p, return_value);
 }
 /* }}} */
 
@@ -289,7 +289,7 @@ PHP_METHOD(shapeFileObj, addShape)
   int retval = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -316,7 +316,7 @@ PHP_METHOD(shapeFileObj, addPoint)
   int retval = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zpoint, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -345,7 +345,7 @@ PHP_METHOD(shapeFileObj, getTransformed)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Ol",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Ol",
                             &zmap, mapscript_ce_map, &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -360,7 +360,7 @@ PHP_METHOD(shapeFileObj, getTransformed)
    * at this point since it will be set by SHPReadShape().
    */
   if ((shape = shapeObj_new(MS_SHAPE_NULL)) == NULL) {
-    mapscript_throw_mapserver_exception("Failed creating new shape (out of memory?)" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Failed creating new shape (out of memory?)");
     return;
   }
 
@@ -368,13 +368,13 @@ PHP_METHOD(shapeFileObj, getTransformed)
   if (shapefileObj_getTransformed(php_shapefile->shapefile, php_map->map,
                                   index, shape) != MS_SUCCESS) {
     shapeObj_destroy(shape);
-    mapscript_throw_mapserver_exception("Failed reading shape %ld." TSRMLS_CC, index);
+    mapscript_throw_mapserver_exception("Failed reading shape %ld.", index);
     return;
   }
 
   /* Return shape object */
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -414,7 +414,7 @@ zend_function_entry shapefile_functions[] = {
 };
 
 
-void mapscript_create_shapefile(shapefileObj *shapefile, zval *return_value TSRMLS_DC)
+void mapscript_create_shapefile(shapefileObj *shapefile, zval *return_value)
 {
   php_shapefile_object * php_shapefile;
 
@@ -425,13 +425,13 @@ void mapscript_create_shapefile(shapefileObj *shapefile, zval *return_value TSRM
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_shapefile_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_shapefile_create_object(zend_class_entry *ce)
 {
   php_shapefile_object *php_shapefile;
 
   php_shapefile = ecalloc(1, sizeof(*php_shapefile) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_shapefile->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_shapefile->zobj, ce);
   object_properties_init(&php_shapefile->zobj, ce);
 
   php_shapefile->zobj.handlers = &mapscript_shapefile_object_handlers;
@@ -459,7 +459,7 @@ PHP_MINIT_FUNCTION(shapefile)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "shapefileObj", shapefile_functions);
-  mapscript_ce_shapefile = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_shapefile = zend_register_internal_class(&ce);
 
   mapscript_ce_shapefile->create_object = mapscript_shapefile_create_object;
   mapscript_ce_shapefile->ce_flags |= ZEND_ACC_FINAL;
@@ -472,7 +472,7 @@ PHP_MINIT_FUNCTION(shapefile)
 }
 #else
 /* PHP5 */
-static void mapscript_shapefile_object_destroy(void *object TSRMLS_DC)
+static void mapscript_shapefile_object_destroy(void *object)
 {
   php_shapefile_object *php_shapefile = (php_shapefile_object *)object;
 
@@ -485,7 +485,7 @@ static void mapscript_shapefile_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_shapefile_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_shapefile_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_shapefile_object *php_shapefile;
@@ -493,7 +493,7 @@ static zend_object_value mapscript_shapefile_object_new(zend_class_entry *ce TSR
   MAPSCRIPT_ALLOC_OBJECT(php_shapefile, php_shapefile_object);
 
   retval = mapscript_object_new(&php_shapefile->std, ce,
-                                &mapscript_shapefile_object_destroy TSRMLS_CC);
+                                &mapscript_shapefile_object_destroy);
 
   php_shapefile->bounds = NULL;
 

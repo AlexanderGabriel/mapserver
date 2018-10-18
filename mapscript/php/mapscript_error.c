@@ -40,9 +40,9 @@
 zend_class_entry *mapscript_ce_mapscriptexception;
 
 #if  PHP_VERSION_ID >= 70000
-zend_object* mapscript_throw_exception(char *format TSRMLS_DC, ...)
+zend_object* mapscript_throw_exception(char *format, ...)
 #else
-zval* mapscript_throw_exception(char *format TSRMLS_DC, ...)
+zval* mapscript_throw_exception(char *format, ...)
 #endif
 {
   va_list args;
@@ -50,13 +50,13 @@ zval* mapscript_throw_exception(char *format TSRMLS_DC, ...)
   va_start(args, format);
   vsprintf(message, format, args);
   va_end(args);
-  return zend_throw_exception(mapscript_ce_mapscriptexception, message, 0 TSRMLS_CC);
+  return zend_throw_exception(mapscript_ce_mapscriptexception, message, 0);
 }
 
 #if  PHP_VERSION_ID >= 70000
-zend_object* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...)
+zend_object* mapscript_throw_mapserver_exception(char *format, ...)
 #else
-zval* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...)
+zval* mapscript_throw_mapserver_exception(char *format, ...)
 #endif
 {
   va_list args;
@@ -66,7 +66,7 @@ zval* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...)
   ms_error = msGetErrorObj();
 
   while (ms_error && ms_error->code != MS_NOERR) {
-    php_error_docref(NULL TSRMLS_CC, E_WARNING,
+    php_error_docref(NULL, E_WARNING,
                      "[MapServer Error]: %s: %s\n",
                      ms_error->routine, ms_error->message);
     ms_error = ms_error->next;
@@ -75,27 +75,27 @@ zval* mapscript_throw_mapserver_exception(char *format TSRMLS_DC, ...)
   va_start(args, format);
   vsprintf(message, format, args);
   va_end(args);
-  return mapscript_throw_exception(message TSRMLS_CC);
+  return mapscript_throw_exception(message);
 }
 
-void mapscript_report_php_error(int error_type, char *format TSRMLS_DC, ...)
+void mapscript_report_php_error(int error_type, char *format, ...)
 {
   va_list args;
   char message[MAX_EXCEPTION_MSG];
   va_start(args, format);
   vsprintf(message, format, args);
   va_end(args);
-  php_error_docref(NULL TSRMLS_CC, error_type, "%s,", message);
+  php_error_docref(NULL, error_type, "%s,", message);
 }
 
-void mapscript_report_mapserver_error(int error_type TSRMLS_DC)
+void mapscript_report_mapserver_error(int error_type)
 {
   errorObj *ms_error;
 
   ms_error = msGetErrorObj();
 
   while (ms_error && ms_error->code != MS_NOERR) {
-    php_error_docref(NULL TSRMLS_CC, error_type,
+    php_error_docref(NULL, error_type,
                      "[MapServer Error]: %s: %s\n",
                      ms_error->routine, ms_error->message);
     ms_error = ms_error->next;
@@ -111,7 +111,7 @@ PHP_MINIT_FUNCTION(mapscript_error)
 #if PHP_VERSION_ID >= 70000
   mapscript_ce_mapscriptexception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C));
 #else
-  mapscript_ce_mapscriptexception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), "Exception" TSRMLS_CC);
+  mapscript_ce_mapscriptexception = zend_register_internal_class_ex(&ce, zend_exception_get_default(TSRMLS_C), "Exception");
 #endif
 
   return SUCCESS;

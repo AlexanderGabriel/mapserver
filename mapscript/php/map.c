@@ -35,7 +35,7 @@ zend_class_entry *mapscript_ce_map;
 zend_object_handlers mapscript_map_object_handlers;
 
 static int mapscript_map_setProjection(int isWKTProj, php_map_object *php_map,
-                                       char *projString, int setUnitsAndExtents TSRMLS_DC);
+                                       char *projString, int setUnitsAndExtents);
 
 ZEND_BEGIN_ARG_INFO_EX(map___construct_args, 0, 0, 1)
 ZEND_ARG_INFO(0, mapFileName)
@@ -331,7 +331,7 @@ PHP_METHOD(mapObj, __construct)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|s",
                             &filename, &filename_len,
                             &path, &path_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -344,7 +344,7 @@ PHP_METHOD(mapObj, __construct)
   map = mapObj_new(filename, path);
 
   if (map == NULL) {
-    mapscript_throw_mapserver_exception("Failed to open map file %s" TSRMLS_CC,  filename);
+    mapscript_throw_mapserver_exception("Failed to open map file %s",  filename);
     return;
   }
 
@@ -360,7 +360,7 @@ PHP_METHOD(mapObj, __get)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -406,7 +406,7 @@ PHP_METHOD(mapObj, __get)
                                                                 else IF_GET_OBJECT("projection", mapscript_ce_projection, php_map->projection, &php_map->map->projection)
                                                                   else IF_GET_OBJECT("metadata", mapscript_ce_hashtable, php_map->metadata, &php_map->map->web.metadata)
                                                                     else {
-                                                                      mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                                                                      mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                                                                     }
 }
 
@@ -419,7 +419,7 @@ PHP_METHOD(mapObj, __set)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -458,16 +458,16 @@ PHP_METHOD(mapObj, __set)
                                           (STRING_EQUAL("metadata", property)) ||
                                           (STRING_EQUAL("configoptions", property)) ||
                                           (STRING_EQUAL("imagecolor", property)) ) {
-                                  mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors." TSRMLS_CC, property);
+                                  mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors.", property);
                                 } else if ( (STRING_EQUAL("numlayers", property)) ||
                                             (STRING_EQUAL("symbolsetfilename", property)) ||
                                             (STRING_EQUAL("imagetype", property)) ||
                                             (STRING_EQUAL("numoutputformats", property)) ||
                                             (STRING_EQUAL("mappath", property)) ||
                                             (STRING_EQUAL("fontsetfilename", property)) ) {
-                                  mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+                                  mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
                                 } else {
-                                  mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                                  mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                                 }
 }
 
@@ -482,7 +482,7 @@ PHP_METHOD(mapObj, getSymbolByName)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &symbolName, &symbolName_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -509,7 +509,7 @@ PHP_METHOD(mapObj, getSymbolObjectById)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &symbolId) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -519,7 +519,7 @@ PHP_METHOD(mapObj, getSymbolObjectById)
   php_map = MAPSCRIPT_OBJ_P(php_map_object, zobj);
 
   if ( symbolId < 0 || symbolId >= php_map->map->symbolset.numsymbols) {
-    mapscript_throw_exception("Invalid symbol index." TSRMLS_CC);
+    mapscript_throw_exception("Invalid symbol index.");
     return;
   }
 
@@ -527,7 +527,7 @@ PHP_METHOD(mapObj, getSymbolObjectById)
 
   /* Return style object */
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_symbol(symbol, parent, return_value TSRMLS_CC);
+  mapscript_create_symbol(symbol, parent, return_value);
 }
 /* }}} */
 
@@ -570,13 +570,13 @@ PHP_METHOD(mapObj, prepareImage)
 
   image = mapObj_prepareImage(php_map->map);
   if (image == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
 
   /* Return an image object */
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
 }
 /* }}} */
 
@@ -599,11 +599,11 @@ PHP_METHOD(mapObj, draw)
 
   image = mapObj_draw(php_map->map);
   if (image == NULL) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     RETURN_NULL();
   }
 
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
 }
 /* }}} */
 
@@ -626,11 +626,11 @@ PHP_METHOD(mapObj, drawQuery)
 
   image = mapObj_drawQuery(php_map->map);
   if (image == NULL) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     RETURN_NULL();
   }
 
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
 }
 /* }}} */
 
@@ -653,12 +653,12 @@ PHP_METHOD(mapObj, drawLegend)
 
   image = mapObj_drawLegend(php_map->map);
   if (image == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
 
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
 }
 /* }}} */
 
@@ -681,12 +681,12 @@ PHP_METHOD(mapObj, drawReferenceMap)
 
   image = mapObj_drawReferenceMap(php_map->map);
   if (image == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
 
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
 }
 /* }}} */
 
@@ -709,12 +709,12 @@ PHP_METHOD(mapObj, drawScaleBar)
 
   image = mapObj_drawScalebar(php_map->map);
   if (image == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
 
-  mapscript_create_image(image, return_value TSRMLS_CC);
+  mapscript_create_image(image, return_value);
 }
 /* }}} */
 
@@ -729,7 +729,7 @@ PHP_METHOD(mapObj, embedLegend)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zimage, mapscript_ce_image) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -741,7 +741,7 @@ PHP_METHOD(mapObj, embedLegend)
 
   retval = mapObj_embedLegend(php_map->map, php_image->image);
   if ( (retval == MS_FAILURE) || (retval == -1) ) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -761,7 +761,7 @@ PHP_METHOD(mapObj, embedScaleBar)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zimage, mapscript_ce_image) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -773,7 +773,7 @@ PHP_METHOD(mapObj, embedScaleBar)
 
   retval = mapObj_embedScalebar(php_map->map, php_image->image);
   if ( (retval == MS_FAILURE) || (retval == -1) ) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -793,7 +793,7 @@ PHP_METHOD(mapObj, drawLabelCache)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zimage, mapscript_ce_image) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -805,7 +805,7 @@ PHP_METHOD(mapObj, drawLabelCache)
 
   retval = mapObj_drawLabelCache(php_map->map, php_image->image);
   if ( (retval == MS_FAILURE) || (retval == -1) ) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -825,7 +825,7 @@ PHP_METHOD(mapObj, getLayer)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -836,14 +836,14 @@ PHP_METHOD(mapObj, getLayer)
 
   layer = mapObj_getLayer(php_map->map, index);
   if  (layer == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
 
   /* Return layer object */
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_layer(layer, parent, return_value TSRMLS_CC);
+  mapscript_create_layer(layer, parent, return_value);
 }
 /* }}} */
 
@@ -859,7 +859,7 @@ PHP_METHOD(mapObj, getLayerByName)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &layerName, &layerName_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -870,13 +870,13 @@ PHP_METHOD(mapObj, getLayerByName)
 
   layer = mapObj_getLayerByName(php_map->map, layerName);
   if  (layer == NULL) {
-    mapscript_report_php_error(E_WARNING, "getLayerByName failed for : %s\n" TSRMLS_CC, layerName);
+    mapscript_report_php_error(E_WARNING, "getLayerByName failed for : %s\n", layerName);
     RETURN_NULL();
   }
 
   /* Return layer object */
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_layer(layer, parent, return_value TSRMLS_CC);
+  mapscript_create_layer(layer, parent, return_value);
 }
 /* }}} */
 
@@ -893,7 +893,7 @@ PHP_METHOD(mapObj, getColorByIndex)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -909,13 +909,13 @@ PHP_METHOD(mapObj, getColorByIndex)
     color.green = palette.colors[index].green;
     color.blue = palette.colors[index].blue;
   } else {
-    mapscript_throw_mapserver_exception("Index should not be higher than %d\n" TSRMLS_CC, palette.numcolors-1);
+    mapscript_throw_mapserver_exception("Index should not be higher than %d\n", palette.numcolors-1);
     return;
   }
 
   /* Return color object */
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_color(&color, parent, return_value TSRMLS_CC);
+  mapscript_create_color(&color, parent, return_value);
 }
 /* }}} */
 
@@ -929,7 +929,7 @@ PHP_METHOD(mapObj, setExtent)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dddd",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "dddd",
                             &minx, &miny, &maxx, &maxy) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -943,7 +943,7 @@ PHP_METHOD(mapObj, setExtent)
                            maxx, maxy);
 
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -962,7 +962,7 @@ PHP_METHOD(mapObj, setCenter)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zpoint, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -974,7 +974,7 @@ PHP_METHOD(mapObj, setCenter)
 
   status = mapObj_setCenter(php_map->map, php_point->point);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -991,7 +991,7 @@ PHP_METHOD(mapObj, offsetExtent)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dd",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "dd",
                             &x, &y) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1002,7 +1002,7 @@ PHP_METHOD(mapObj, offsetExtent)
 
   status = mapObj_offsetExtent(php_map->map, x, y);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1020,7 +1020,7 @@ PHP_METHOD(mapObj, scaleExtent)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ddd",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ddd",
                             &zoomFactor, &minScaleDenom, &maxScaleDenom) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1031,7 +1031,7 @@ PHP_METHOD(mapObj, scaleExtent)
 
   status = mapObj_scaleExtent(php_map->map, zoomFactor, minScaleDenom, maxScaleDenom);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1051,7 +1051,7 @@ PHP_METHOD(mapObj, setRotation)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "d",
                             &angle) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1062,7 +1062,7 @@ PHP_METHOD(mapObj, setRotation)
 
   status = mapObj_setRotation(php_map->map, angle);
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1081,7 +1081,7 @@ PHP_METHOD(mapObj, setSize)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ll",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ll",
                             &width, &height) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1092,7 +1092,7 @@ PHP_METHOD(mapObj, setSize)
 
   status = msMapSetSize(php_map->map, width, height);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1117,7 +1117,7 @@ PHP_METHOD(mapObj, zoomPoint)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lOllO|O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "lOllO|O",
                             &zoomFactor,
                             &zpoint, mapscript_ce_point,
                             &width, &height,
@@ -1143,7 +1143,7 @@ PHP_METHOD(mapObj, zoomPoint)
       php_geoRefExtent->rect == NULL ||
       php_pixelPosition->point == NULL ||
       (zmaxGeoRefExtent && php_maxGeoRefExtent->rect == NULL)) {
-    mapscript_throw_mapserver_exception("Incorrect parameters\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Incorrect parameters\n");
     return;
   }
 
@@ -1151,21 +1151,21 @@ PHP_METHOD(mapObj, zoomPoint)
   /*      check if the values passed are consistent min > max.             */
   /* -------------------------------------------------------------------- */
   if (php_geoRefExtent->rect->minx >= php_geoRefExtent->rect->maxx) {
-    mapscript_throw_mapserver_exception("Georeferenced coordinates minx >= maxx\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Georeferenced coordinates minx >= maxx\n");
     return;
   }
   if (php_geoRefExtent->rect->miny >= php_geoRefExtent->rect->maxy) {
-    mapscript_throw_mapserver_exception("Georeferenced coordinates miny >= maxy\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Georeferenced coordinates miny >= maxy\n");
     return;
   }
 
   if (zmaxGeoRefExtent) {
     if (php_maxGeoRefExtent->rect->minx >= php_maxGeoRefExtent->rect->maxx) {
-      mapscript_throw_mapserver_exception("Max Georeferenced coordinates minx >= maxx\n" TSRMLS_CC);
+      mapscript_throw_mapserver_exception("Max Georeferenced coordinates minx >= maxx\n");
       return;
     }
     if (php_maxGeoRefExtent->rect->miny >= php_maxGeoRefExtent->rect->maxy) {
-      mapscript_throw_mapserver_exception("Max Georeferenced coordinates miny >= maxy\n" TSRMLS_CC);
+      mapscript_throw_mapserver_exception("Max Georeferenced coordinates miny >= maxy\n");
       return;
     }
   }
@@ -1218,7 +1218,7 @@ PHP_METHOD(mapObj, zoomPoint)
   if (msCalculateScale(newGeoRefExtent, php_map->map->units,
                        php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &dfNewScale) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1312,7 +1312,7 @@ PHP_METHOD(mapObj, zoomPoint)
 
   if (msCalculateScale(php_map->map->extent, php_map->map->units, php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &(php_map->map->scaledenom)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1337,7 +1337,7 @@ PHP_METHOD(mapObj, zoomRectangle)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OllO|O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OllO|O",
                             &zpixelExtent , mapscript_ce_rect,
                             &width, &height,
                             &zgeoRefExtent , mapscript_ce_rect,
@@ -1362,7 +1362,7 @@ PHP_METHOD(mapObj, zoomRectangle)
       php_geoRefExtent->rect == NULL ||
       php_pixelExtent->rect == NULL ||
       (zmaxGeoRefExtent && php_maxGeoRefExtent->rect == NULL)) {
-    mapscript_throw_mapserver_exception("Incorrect parameters\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Incorrect parameters\n");
     return;
   }
 
@@ -1370,20 +1370,20 @@ PHP_METHOD(mapObj, zoomRectangle)
   /*      check if the values passed are consistent min > max.            */
   /* -------------------------------------------------------------------- */
   if (php_geoRefExtent->rect->minx >= php_geoRefExtent->rect->maxx) {
-    mapscript_throw_mapserver_exception("Georeferenced coordinates minx >= maxx\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Georeferenced coordinates minx >= maxx\n");
     return;
   }
   if (php_geoRefExtent->rect->miny >= php_geoRefExtent->rect->maxy) {
-    mapscript_throw_mapserver_exception("Georeferenced coordinates miny >= maxy\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Georeferenced coordinates miny >= maxy\n");
     return;
   }
   if (zmaxGeoRefExtent) {
     if (php_maxGeoRefExtent->rect->minx >= php_maxGeoRefExtent->rect->maxx) {
-      mapscript_throw_mapserver_exception("Max Georeferenced coordinates minx >= maxx\n" TSRMLS_CC);
+      mapscript_throw_mapserver_exception("Max Georeferenced coordinates minx >= maxx\n");
       return;
     }
     if (php_maxGeoRefExtent->rect->miny >= php_maxGeoRefExtent->rect->maxy) {
-      mapscript_throw_mapserver_exception("Max Georeferenced coordinates miny >= maxy\n" TSRMLS_CC);
+      mapscript_throw_mapserver_exception("Max Georeferenced coordinates miny >= maxy\n");
       return;
     }
   }
@@ -1411,7 +1411,7 @@ PHP_METHOD(mapObj, zoomRectangle)
   if (msCalculateScale(newGeoRefExtent, php_map->map->units,
                        php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &dfNewScale) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1502,7 +1502,7 @@ PHP_METHOD(mapObj, zoomRectangle)
 
   if (msCalculateScale(php_map->map->extent, php_map->map->units, php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &(php_map->map->scaledenom)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1531,7 +1531,7 @@ PHP_METHOD(mapObj, zoomScale)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "dOllO|O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "dOllO|O",
                             &scaleDenom,
                             &zpoint, mapscript_ce_point,
                             &width, &height,
@@ -1557,7 +1557,7 @@ PHP_METHOD(mapObj, zoomScale)
       php_geoRefExtent->rect == NULL ||
       php_pixelPosition->point == NULL ||
       (zmaxGeoRefExtent && php_maxGeoRefExtent->rect == NULL)) {
-    mapscript_throw_mapserver_exception("Incorrect parameters\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Incorrect parameters\n");
     return;
   }
 
@@ -1565,20 +1565,20 @@ PHP_METHOD(mapObj, zoomScale)
   /*      check if the values passed are consistent min > max.             */
   /* -------------------------------------------------------------------- */
   if (php_geoRefExtent->rect->minx >= php_geoRefExtent->rect->maxx) {
-    mapscript_throw_mapserver_exception("Georeferenced coordinates minx >= maxx\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Georeferenced coordinates minx >= maxx\n");
     return;
   }
   if (php_geoRefExtent->rect->miny >= php_geoRefExtent->rect->maxy) {
-    mapscript_throw_mapserver_exception("Georeferenced coordinates miny >= maxy\n" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Georeferenced coordinates miny >= maxy\n");
     return;
   }
   if (zmaxGeoRefExtent) {
     if (php_maxGeoRefExtent->rect->minx >= php_maxGeoRefExtent->rect->maxx) {
-      mapscript_throw_mapserver_exception("Max Georeferenced coordinates minx >= maxx\n" TSRMLS_CC);
+      mapscript_throw_mapserver_exception("Max Georeferenced coordinates minx >= maxx\n");
       return;
     }
     if (php_maxGeoRefExtent->rect->miny >= php_maxGeoRefExtent->rect->maxy) {
-      mapscript_throw_mapserver_exception("Max Georeferenced coordinates miny >= maxy\n" TSRMLS_CC);
+      mapscript_throw_mapserver_exception("Max Georeferenced coordinates miny >= maxy\n");
       return;
     }
   }
@@ -1624,7 +1624,7 @@ PHP_METHOD(mapObj, zoomScale)
   if (msCalculateScale(*php_geoRefExtent->rect, php_map->map->units,
                        php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &dfCurrentScale) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1640,7 +1640,7 @@ PHP_METHOD(mapObj, zoomScale)
   if (msCalculateScale(newGeoRefExtent, php_map->map->units,
                        php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &dfNewScale) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1735,7 +1735,7 @@ PHP_METHOD(mapObj, zoomScale)
 
   if (msCalculateScale(php_map->map->extent, php_map->map->units, php_map->map->width, php_map->map->height,
                        php_map->map->resolution, &(php_map->map->scaledenom)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1765,7 +1765,7 @@ PHP_METHOD(mapObj, queryByPoint)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Old",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Old",
                             &zpoint, mapscript_ce_point,
                             &mode, &buffer) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -1778,7 +1778,7 @@ PHP_METHOD(mapObj, queryByPoint)
 
   status = mapObj_queryByPoint(php_map->map, php_point->point, mode, buffer);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1795,7 +1795,7 @@ PHP_METHOD(mapObj, queryByRect)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zrect, mapscript_ce_rect) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1807,7 +1807,7 @@ PHP_METHOD(mapObj, queryByRect)
 
   status = mapObj_queryByRect(php_map->map, *(php_rect->rect));
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1831,7 +1831,7 @@ PHP_METHOD(mapObj, queryByShape)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1843,7 +1843,7 @@ PHP_METHOD(mapObj, queryByShape)
 
   status = mapObj_queryByShape(php_map->map, php_shape->shape);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1859,7 +1859,7 @@ PHP_METHOD(mapObj, queryByFeatures)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &slayer) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1870,7 +1870,7 @@ PHP_METHOD(mapObj, queryByFeatures)
 
   status = mapObj_queryByFeatures(php_map->map, slayer);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1896,7 +1896,7 @@ PHP_METHOD(mapObj, queryByIndex)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "lll|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "lll|l",
                             &layerIndex, &tileIndex,
                             &shapeIndex, &addToQuery) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -1911,7 +1911,7 @@ PHP_METHOD(mapObj, queryByIndex)
                                shapeIndex,
                                addToQuery);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1928,7 +1928,7 @@ PHP_METHOD(mapObj, queryByFilter)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &string, &string_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1939,7 +1939,7 @@ PHP_METHOD(mapObj, queryByFilter)
 
   status = mapObj_queryByFilter(php_map->map, string);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -1958,7 +1958,7 @@ PHP_METHOD(mapObj, saveQuery)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l",
                             &filename, &filename_len, &results) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1986,7 +1986,7 @@ PHP_METHOD(mapObj, saveQueryAsGML)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|s",
                             &filename, &filename_len, &namespace, &namespace_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2012,7 +2012,7 @@ PHP_METHOD(mapObj, loadQuery)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2037,7 +2037,7 @@ PHP_METHOD(mapObj, freeQuery)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &qlayer) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2063,7 +2063,7 @@ PHP_METHOD(mapObj, save)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2074,7 +2074,7 @@ PHP_METHOD(mapObj, save)
 
   status = mapObj_save(php_map->map, filename);
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -2095,7 +2095,7 @@ PHP_METHOD(mapObj, setProjection)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l",
                             &projection, &projection_len, &setUnitsAndExtents) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2105,7 +2105,7 @@ PHP_METHOD(mapObj, setProjection)
   php_map = MAPSCRIPT_OBJ_P(php_map_object, zobj);
 
   status = mapscript_map_setProjection(MS_FALSE, php_map,
-                                       projection, setUnitsAndExtents TSRMLS_CC);
+                                       projection, setUnitsAndExtents);
   RETURN_LONG(status);
 }
 /* }}} */
@@ -2149,7 +2149,7 @@ PHP_METHOD(mapObj, setWKTProjection)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l",
                             &projection, &projection_len, &setUnitsAndExtents) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2159,7 +2159,7 @@ PHP_METHOD(mapObj, setWKTProjection)
   php_map = MAPSCRIPT_OBJ_P(php_map_object, zobj);
 
   status = mapscript_map_setProjection(MS_TRUE, php_map,
-                                       projection, setUnitsAndExtents TSRMLS_CC);
+                                       projection, setUnitsAndExtents);
   RETURN_LONG(status);
 }
 /* }}} */
@@ -2174,7 +2174,7 @@ PHP_METHOD(mapObj, getMetaData)
   MAPSCRIPT_ZVAL retval;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "z",
                             &zname) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2204,7 +2204,7 @@ PHP_METHOD(mapObj, setMetaData)
   MAPSCRIPT_ZVAL retval;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "zz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "zz",
                             &zname, &zvalue) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2234,7 +2234,7 @@ PHP_METHOD(mapObj, removeMetaData)
   MAPSCRIPT_ZVAL retval;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "z",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "z",
                             &zname) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2267,7 +2267,7 @@ PHP_METHOD(mapObj, getLayersIndexByGroup)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &groupName, &groupName_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2364,7 +2364,7 @@ PHP_METHOD(mapObj, moveLayerUp)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2389,7 +2389,7 @@ PHP_METHOD(mapObj, moveLayerDown)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2467,7 +2467,7 @@ PHP_METHOD(mapObj, setLayersDrawingOrder)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                             &zindexes) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2526,7 +2526,7 @@ PHP_METHOD(mapObj, processTemplate)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "al",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "al",
                             &zindexes, &generateImages) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2560,7 +2560,7 @@ PHP_METHOD(mapObj, processTemplate)
 
   } else {
     // Failed for some reason
-    mapscript_report_php_error(E_WARNING, "processTemplate: failed reading array" TSRMLS_CC);
+    mapscript_report_php_error(E_WARNING, "processTemplate: failed reading array");
     MAPSCRIPT_RETURN_STRING("", 1);
   }
   efree(papszNameValue);
@@ -2575,7 +2575,7 @@ PHP_METHOD(mapObj, processTemplate)
     MAPSCRIPT_RETVAL_STRING(buffer, 1);
     free(buffer);
   } else {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     MAPSCRIPT_RETURN_STRING("", 1);
   }
 }
@@ -2598,7 +2598,7 @@ PHP_METHOD(mapObj, processQueryTemplate)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "a|l",
                             &zindexes, &generateImages) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2633,7 +2633,7 @@ PHP_METHOD(mapObj, processQueryTemplate)
 
   } else {
     // Failed for some reason
-    mapscript_report_php_error(E_WARNING, "processQueryTemplate: failed reading array" TSRMLS_CC);
+    mapscript_report_php_error(E_WARNING, "processQueryTemplate: failed reading array");
     MAPSCRIPT_RETURN_STRING("", 1);
   }
   efree(papszNameValue);
@@ -2649,7 +2649,7 @@ PHP_METHOD(mapObj, processQueryTemplate)
     MAPSCRIPT_RETVAL_STRING(buffer, 1);
     free(buffer);
   } else {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     MAPSCRIPT_RETURN_STRING("", 1);
   }
 }
@@ -2671,7 +2671,7 @@ PHP_METHOD(mapObj, processLegendTemplate)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "a",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "a",
                             &zindexes) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2706,7 +2706,7 @@ PHP_METHOD(mapObj, processLegendTemplate)
 
   } else {
     // Failed for some reason
-    mapscript_report_php_error(E_WARNING, "processLegendTemplate: failed reading array" TSRMLS_CC);
+    mapscript_report_php_error(E_WARNING, "processLegendTemplate: failed reading array");
     MAPSCRIPT_RETURN_STRING("", 1);
   }
   efree(papszNameValue);
@@ -2722,7 +2722,7 @@ PHP_METHOD(mapObj, processLegendTemplate)
     MAPSCRIPT_RETVAL_STRING(buffer, 1);
     free(buffer);
   } else {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     MAPSCRIPT_RETURN_STRING("", 1);
   }
 }
@@ -2738,7 +2738,7 @@ PHP_METHOD(mapObj, setSymbolSet)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2750,7 +2750,7 @@ PHP_METHOD(mapObj, setSymbolSet)
   if(filename_len > 0) {
     if ((status = mapObj_setSymbolSet(php_map->map,
                                       filename)) != 0) {
-      mapscript_throw_mapserver_exception("Failed loading symbolset from %s" TSRMLS_CC,
+      mapscript_throw_mapserver_exception("Failed loading symbolset from %s",
                                           filename);
       return;
     }
@@ -2791,7 +2791,7 @@ PHP_METHOD(mapObj, setFontSet)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2803,7 +2803,7 @@ PHP_METHOD(mapObj, setFontSet)
   if(filename_len > 0) {
     if ((status = mapObj_setFontSet(php_map->map,
                                     filename)) != 0) {
-      mapscript_throw_mapserver_exception("Failed loading fontset from %s" TSRMLS_CC,
+      mapscript_throw_mapserver_exception("Failed loading fontset from %s",
                                           filename);
       return;
     }
@@ -2825,7 +2825,7 @@ PHP_METHOD(mapObj, selectOutputFormat)
   php_outputformat_object *php_outputformat = NULL;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &type, &type_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2840,7 +2840,7 @@ PHP_METHOD(mapObj, selectOutputFormat)
                                           type)) != MS_SUCCESS)
 
   {
-    mapscript_report_php_error(E_WARNING, "Unable to set output format to '%s'" TSRMLS_CC,
+    mapscript_report_php_error(E_WARNING, "Unable to set output format to '%s'",
                                type);
   } else if (ZVAL_NOT_UNDEF(php_map->outputformat)) {
     php_outputformat->outputformat = php_map->map->outputformat;
@@ -2861,7 +2861,7 @@ PHP_METHOD(mapObj, appendOutputFormat)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zoutputformat, mapscript_ce_outputformat) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2888,7 +2888,7 @@ PHP_METHOD(mapObj, removeOutputFormat)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &name, &name_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2900,7 +2900,7 @@ PHP_METHOD(mapObj, removeOutputFormat)
   if ((status = msRemoveOutputFormat(php_map->map, name)) != MS_SUCCESS)
 
   {
-    mapscript_report_php_error(E_WARNING, "Unable to remove output format to '%s'" TSRMLS_CC,
+    mapscript_report_php_error(E_WARNING, "Unable to remove output format to '%s'",
                                name);
   }
 
@@ -2918,7 +2918,7 @@ PHP_METHOD(mapObj, getOutputFormat)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2928,13 +2928,13 @@ PHP_METHOD(mapObj, getOutputFormat)
   php_map = MAPSCRIPT_OBJ_P(php_map_object, zobj);
 
   if (index < 0 || index >= php_map->map->numoutputformats) {
-    mapscript_throw_mapserver_exception("Invalid outputformat index." TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Invalid outputformat index.");
     return;
   }
 
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
   mapscript_create_outputformat(php_map->map->outputformatlist[index],
-                                parent, return_value TSRMLS_CC);
+                                parent, return_value);
 }
 /* }}} */
 
@@ -2948,7 +2948,7 @@ PHP_METHOD(mapObj, saveMapContext)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2959,8 +2959,8 @@ PHP_METHOD(mapObj, saveMapContext)
 
   if(filename_len > 0) {
     if ((status = mapObj_saveMapContext(php_map->map, filename)) != MS_SUCCESS) {
-      mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
-      mapscript_report_php_error(E_WARNING, "Failed saving map context from %s" TSRMLS_CC,
+      mapscript_report_mapserver_error(E_WARNING);
+      mapscript_report_php_error(E_WARNING, "Failed saving map context from %s",
                                  filename);
       RETURN_LONG(MS_FAILURE);
     }
@@ -2981,7 +2981,7 @@ PHP_METHOD(mapObj, loadMapContext)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|l",
                             &filename, &filename_len, &unique) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -2992,8 +2992,8 @@ PHP_METHOD(mapObj, loadMapContext)
 
   if(filename_len > 0) {
     if ((status = mapObj_loadMapContext(php_map->map, filename, unique)) != MS_SUCCESS) {
-      mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
-      mapscript_report_php_error(E_WARNING, "Failed loading map context from %s" TSRMLS_CC,
+      mapscript_report_mapserver_error(E_WARNING);
+      mapscript_report_php_error(E_WARNING, "Failed loading map context from %s",
                                  filename);
       RETURN_LONG(MS_FAILURE);
     }
@@ -3014,7 +3014,7 @@ PHP_METHOD(mapObj, applySLD)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &sldxml, &sldxml_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3041,7 +3041,7 @@ PHP_METHOD(mapObj, applySLDURL)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &sldurl, &sldurl_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3079,7 +3079,7 @@ PHP_METHOD(mapObj, generateSLD)
     MAPSCRIPT_RETVAL_STRING(buffer, 1);
     free(buffer);
   } else {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     MAPSCRIPT_RETURN_STRING("", 1);
   }
 }
@@ -3098,7 +3098,7 @@ PHP_METHOD(mapObj, getConfigOption)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &key, &key_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3127,7 +3127,7 @@ PHP_METHOD(mapObj, setConfigOption)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
                             &key, &key_len, &value, &value_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3177,7 +3177,7 @@ PHP_METHOD(mapObj, loadOwsParameters)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O|s",
                             &zrequest, mapscript_ce_owsrequest,
                             &version, &version_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -3213,7 +3213,7 @@ PHP_METHOD(mapObj, owsDispatch)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zrequest, mapscript_ce_owsrequest) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3241,7 +3241,7 @@ PHP_METHOD(mapObj, insertLayer)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O|l",
                             &zlayer, mapscript_ce_layer, &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3253,7 +3253,7 @@ PHP_METHOD(mapObj, insertLayer)
 
 
   if ((retval = mapObj_insertLayer(php_map->map, php_layer->layer, index)) < 0) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -3274,7 +3274,7 @@ PHP_METHOD(mapObj, removeLayer)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3284,13 +3284,13 @@ PHP_METHOD(mapObj, removeLayer)
   php_map = MAPSCRIPT_OBJ_P(php_map_object, zobj);
 
   if ((layer = mapObj_removeLayer(php_map->map, index)) == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
   /* return layer object */
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_layer(layer, parent, return_value TSRMLS_CC);
+  mapscript_create_layer(layer, parent, return_value);
 }
 /* }}} */
 
@@ -3307,7 +3307,7 @@ PHP_METHOD(mapObj, getLabel)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -3323,7 +3323,7 @@ PHP_METHOD(mapObj, getLabel)
 
   /* Return labelCacheMember object */
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_labelcachemember(labelCacheMember, parent, return_value TSRMLS_CC);
+  mapscript_create_labelcachemember(labelCacheMember, parent, return_value);
 }
 /* }}} */
 #endif
@@ -3392,10 +3392,10 @@ PHP_METHOD(mapObj, getLatLongExtent)
 
   /* Return rectObj */
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_rect(&geoRefExt, parent, return_value TSRMLS_CC);
+  mapscript_create_rect(&geoRefExt, parent, return_value);
 
 #else
-  mapscript_throw_exception("Available only with PROJ.4 support." TSRMLS_CC);
+  mapscript_throw_exception("Available only with PROJ.4 support.");
   return;
 #endif
 }
@@ -3520,7 +3520,7 @@ zend_function_entry map_functions[] = {
 };
 
 static int mapscript_map_setProjection(int isWKTProj, php_map_object *php_map,
-                                       char *projString, int setUnitsAndExtents TSRMLS_DC)
+                                       char *projString, int setUnitsAndExtents)
 {
 #ifdef USE_PROJ
   int                 status = MS_SUCCESS;
@@ -3560,7 +3560,7 @@ static int mapscript_map_setProjection(int isWKTProj, php_map_object *php_map,
     status = mapObj_setProjection(php_map->map, projString);
 
   if (status == -1) {
-    mapscript_report_php_error(E_WARNING, "setProjection failed" TSRMLS_CC);
+    mapscript_report_php_error(E_WARNING, "setProjection failed");
     return MS_FAILURE;
   } else if (ZVAL_NOT_UNDEF(php_map->projection)) {
     php_projection->projection = &(php_map->map->projection);
@@ -3588,12 +3588,12 @@ static int mapscript_map_setProjection(int isWKTProj, php_map_object *php_map,
 
   return MS_SUCCESS;
 #else
-  mapscript_throw_exception("Available only with PROJ.4 support." TSRMLS_CC);
+  mapscript_throw_exception("Available only with PROJ.4 support.");
   return MS_FAILURE;
 #endif
 }
 
-void mapscript_create_map(mapObj *map, zval *return_value TSRMLS_DC)
+void mapscript_create_map(mapObj *map, zval *return_value)
 {
   php_map_object * php_map;
   object_init_ex(return_value, mapscript_ce_map);
@@ -3603,13 +3603,13 @@ void mapscript_create_map(mapObj *map, zval *return_value TSRMLS_DC)
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_map_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_map_create_object(zend_class_entry *ce)
 {
   php_map_object *php_map;
 
   php_map = ecalloc(1, sizeof(*php_map) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_map->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_map->zobj, ce);
   object_properties_init(&php_map->zobj, ce);
 
   php_map->zobj.handlers = &mapscript_map_object_handlers;
@@ -3680,7 +3680,7 @@ PHP_MINIT_FUNCTION(map)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "mapObj", map_functions);
-  mapscript_ce_map = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_map = zend_register_internal_class(&ce);
 
   mapscript_ce_map->create_object = mapscript_map_create_object;
   mapscript_ce_map->ce_flags |= ZEND_ACC_FINAL;
@@ -3694,7 +3694,7 @@ PHP_MINIT_FUNCTION(map)
 }
 #else
 /* PHP5 */
-static void mapscript_map_object_destroy(void *object TSRMLS_DC)
+static void mapscript_map_object_destroy(void *object)
 {
   php_map_object *php_map = (php_map_object *)object;
 
@@ -3719,7 +3719,7 @@ static void mapscript_map_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_map_object_new_ex(zend_class_entry *ce, php_map_object **ptr TSRMLS_DC)
+static zend_object_value mapscript_map_object_new_ex(zend_class_entry *ce, php_map_object **ptr)
 {
   zend_object_value retval;
   php_map_object *php_map;
@@ -3728,7 +3728,7 @@ static zend_object_value mapscript_map_object_new_ex(zend_class_entry *ce, php_m
 
   retval = mapscript_object_new_ex(&php_map->std, ce,
                                    &mapscript_map_object_destroy,
-                                   &mapscript_map_object_handlers TSRMLS_CC);
+                                   &mapscript_map_object_handlers);
 
   if (ptr)
     *ptr = php_map;
@@ -3751,20 +3751,20 @@ static zend_object_value mapscript_map_object_new_ex(zend_class_entry *ce, php_m
   return retval;
 }
 
-static zend_object_value mapscript_map_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_map_object_new(zend_class_entry *ce)
 {
-  return mapscript_map_object_new_ex(ce, NULL TSRMLS_CC);
+  return mapscript_map_object_new_ex(ce, NULL);
 }
 
-static zend_object_value mapscript_map_object_clone(zval *zobj TSRMLS_DC)
+static zend_object_value mapscript_map_object_clone(zval *zobj)
 {
   php_map_object *php_map_old, *php_map_new;
   zend_object_value new_ov;
 
   php_map_old = MAPSCRIPT_OBJ_P(php_map_object, zobj);
 
-  new_ov = mapscript_map_object_new_ex(mapscript_ce_map, &php_map_new TSRMLS_CC);
-  zend_objects_clone_members(&php_map_new->std, new_ov, &php_map_old->std, Z_OBJ_HANDLE_P(zobj) TSRMLS_CC);
+  new_ov = mapscript_map_object_new_ex(mapscript_ce_map, &php_map_new);
+  zend_objects_clone_members(&php_map_new->std, new_ov, &php_map_old->std, Z_OBJ_HANDLE_P(zobj));
 
   php_map_new->map = mapObj_clone(php_map_old->map);
 

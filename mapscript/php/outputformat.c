@@ -75,7 +75,7 @@ PHP_METHOD(outputFormatObj, __construct)
   long name_len = 0;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|s",
                             &driver, &driver_len, &name, &name_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -85,7 +85,7 @@ PHP_METHOD(outputFormatObj, __construct)
   php_outputformat = MAPSCRIPT_OBJ_P(php_outputformat_object, zobj);
 
   if ((php_outputformat->outputformat = outputFormatObj_new(driver, name)) == NULL) {
-    mapscript_throw_exception("Unable to construct outputFormatObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct outputFormatObj.");
     return;
   }
 }
@@ -99,7 +99,7 @@ PHP_METHOD(outputFormatObj, __get)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -119,7 +119,7 @@ PHP_METHOD(outputFormatObj, __get)
               else IF_GET_LONG("bands", php_outputformat->outputformat->bands)
                 else IF_GET_LONG("numformatoptions", php_outputformat->outputformat->numformatoptions)
                   else {
-                    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                   }
 }
 
@@ -132,7 +132,7 @@ PHP_METHOD(outputFormatObj, __set)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -150,11 +150,11 @@ PHP_METHOD(outputFormatObj, __set)
             else IF_SET_LONG("transparent", php_outputformat->outputformat->transparent, value)
               else if ( (STRING_EQUAL("bands", property)) ||
                         (STRING_EQUAL("numformatoptions", property)) ) {
-                mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+                mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
               }
 
               else {
-                mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                mapscript_throw_exception("Property '%s' does not exist in this object.", property);
               }
 }
 
@@ -170,7 +170,7 @@ PHP_METHOD(outputFormatObj, setOption)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "ss",
                             &property, &property_len, &value, &value_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -197,7 +197,7 @@ PHP_METHOD(outputFormatObj, getOption)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -233,7 +233,7 @@ PHP_METHOD(outputFormatObj, validate)
 
   status = msOutputFormatValidate(php_outputformat->outputformat, MS_TRUE);
   if (status != MS_TRUE) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
     RETURN_LONG(MS_FAILURE);
   } else
     RETURN_LONG(MS_SUCCESS);
@@ -249,7 +249,7 @@ PHP_METHOD(outputFormatObj, getOptionByIndex)
   php_outputformat_object *php_outputformat;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -259,7 +259,7 @@ PHP_METHOD(outputFormatObj, getOptionByIndex)
   php_outputformat = MAPSCRIPT_OBJ_P(php_outputformat_object, zobj);
 
   if (index < 0 || index >= php_outputformat->outputformat->numformatoptions) {
-    mapscript_throw_mapserver_exception("Invalid format option index." TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Invalid format option index.");
     return;
   }
 
@@ -280,7 +280,7 @@ zend_function_entry outputformat_functions[] = {
   }
 };
 
-void mapscript_create_outputformat(outputFormatObj *outputformat, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_outputformat(outputFormatObj *outputformat, parent_object parent, zval *return_value)
 {
   php_outputformat_object * php_outputformat;
   object_init_ex(return_value, mapscript_ce_outputformat);
@@ -296,13 +296,13 @@ void mapscript_create_outputformat(outputFormatObj *outputformat, parent_object 
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_outputformat_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_outputformat_create_object(zend_class_entry *ce)
 {
   php_outputformat_object *php_outputformat;
 
   php_outputformat = ecalloc(1, sizeof(*php_outputformat) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_outputformat->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_outputformat->zobj, ce);
   object_properties_init(&php_outputformat->zobj, ce);
 
   php_outputformat->zobj.handlers = &mapscript_outputformat_object_handlers;
@@ -333,7 +333,7 @@ PHP_MINIT_FUNCTION(outputformat)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "outputFormatObj", outputformat_functions);
-  mapscript_ce_outputformat = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_outputformat = zend_register_internal_class(&ce);
 
   mapscript_ce_outputformat->create_object = mapscript_outputformat_create_object;
   mapscript_ce_outputformat->ce_flags |= ZEND_ACC_FINAL;
@@ -347,7 +347,7 @@ PHP_MINIT_FUNCTION(outputformat)
 #else
 /* PHP5 */
 
-static void mapscript_outputformat_object_destroy(void *object TSRMLS_DC)
+static void mapscript_outputformat_object_destroy(void *object)
 {
   php_outputformat_object *php_outputformat = (php_outputformat_object *)object;
 
@@ -362,7 +362,7 @@ static void mapscript_outputformat_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_outputformat_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_outputformat_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_outputformat_object *php_outputformat;
@@ -370,7 +370,7 @@ static zend_object_value mapscript_outputformat_object_new(zend_class_entry *ce 
   MAPSCRIPT_ALLOC_OBJECT(php_outputformat, php_outputformat_object);
 
   retval = mapscript_object_new(&php_outputformat->std, ce,
-                                &mapscript_outputformat_object_destroy TSRMLS_CC);
+                                &mapscript_outputformat_object_destroy);
 
   php_outputformat->is_ref = 0;
   MAPSCRIPT_INIT_PARENT(php_outputformat->parent);

@@ -53,7 +53,7 @@ ZEND_END_ARG_INFO()
    webObj CANNOT be instanciated, this will throw an exception on use */
 PHP_METHOD(webObj, __construct)
 {
-  mapscript_throw_exception("webObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("webObj cannot be constructed");
 }
 /* }}} */
 
@@ -65,7 +65,7 @@ PHP_METHOD(webObj, __get)
   php_web_object *php_web;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -94,7 +94,7 @@ PHP_METHOD(webObj, __get)
                                   else IF_GET_OBJECT("metadata", mapscript_ce_hashtable, php_web->metadata, &php_web->web->metadata)
                                     else IF_GET_OBJECT("validation", mapscript_ce_hashtable, php_web->validation, &php_web->web->validation)
                                       else {
-                                        mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                                        mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                                       }
 }
 
@@ -107,7 +107,7 @@ PHP_METHOD(webObj, __set)
   php_web_object *php_web;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -133,12 +133,12 @@ PHP_METHOD(webObj, __set)
                             else if ( (STRING_EQUAL("empty", property)) ||
                                       (STRING_EQUAL("error", property)) ||
                                       (STRING_EQUAL("extent", property))) {
-                              mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+                              mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
                             } else if ( (STRING_EQUAL("metadata", property)) ||
                                         (STRING_EQUAL("validation", property)) ) {
-                              mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors." TSRMLS_CC, property);
+                              mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors.", property);
                             } else {
-                              mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                              mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                             }
 }
 
@@ -153,7 +153,7 @@ PHP_METHOD(webObj, updateFromString)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &snippet, &snippet_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -165,7 +165,7 @@ PHP_METHOD(webObj, updateFromString)
   status =  webObj_updateFromString(php_web->web, snippet);
 
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -234,7 +234,7 @@ zend_function_entry web_functions[] = {
   }
 };
 
-void mapscript_create_web(webObj *web, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_web(webObj *web, parent_object parent, zval *return_value)
 {
   php_web_object * php_web;
   object_init_ex(return_value, mapscript_ce_web);
@@ -247,13 +247,13 @@ void mapscript_create_web(webObj *web, parent_object parent, zval *return_value 
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_web_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_web_create_object(zend_class_entry *ce)
 {
   php_web_object *php_web;
 
   php_web = ecalloc(1, sizeof(*php_web) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_web->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_web->zobj, ce);
   object_properties_init(&php_web->zobj, ce);
 
   php_web->zobj.handlers = &mapscript_web_object_handlers;
@@ -287,7 +287,7 @@ PHP_MINIT_FUNCTION(web)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "webObj", web_functions);
-  mapscript_ce_web = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_web = zend_register_internal_class(&ce);
 
   mapscript_ce_web->create_object = mapscript_web_create_object;
   mapscript_ce_web->ce_flags |= ZEND_ACC_FINAL;
@@ -300,7 +300,7 @@ PHP_MINIT_FUNCTION(web)
 }
 #else
 /* PHP5 */
-static void mapscript_web_object_destroy(void *object TSRMLS_DC)
+static void mapscript_web_object_destroy(void *object)
 {
   php_web_object *php_web = (php_web_object *)object;
 
@@ -316,7 +316,7 @@ static void mapscript_web_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_web_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_web_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_web_object *php_web;
@@ -324,7 +324,7 @@ static zend_object_value mapscript_web_object_new(zend_class_entry *ce TSRMLS_DC
   MAPSCRIPT_ALLOC_OBJECT(php_web, php_web_object);
 
   retval = mapscript_object_new(&php_web->std, ce,
-                                &mapscript_web_object_destroy TSRMLS_CC);
+                                &mapscript_web_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_web->parent);
   php_web->extent = NULL;

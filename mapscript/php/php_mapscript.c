@@ -128,7 +128,7 @@ PHP_FUNCTION(ms_newMapObj)
   mapObj *map = NULL;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|s",
                             &filename, &filename_len,
                             &path, &path_len) == FAILURE) {
     return;
@@ -139,11 +139,11 @@ PHP_FUNCTION(ms_newMapObj)
   map = mapObj_new(filename, path);
 
   if (map == NULL) {
-    mapscript_throw_mapserver_exception("Failed to open map file \"%s\", or map file error." TSRMLS_CC,  filename);
+    mapscript_throw_mapserver_exception("Failed to open map file \"%s\", or map file error.",  filename);
     return;
   }
 
-  mapscript_create_map(map, return_value TSRMLS_CC);
+  mapscript_create_map(map, return_value);
 }
 /* }}} */
 
@@ -158,7 +158,7 @@ PHP_FUNCTION(ms_newMapObjFromString)
   mapObj *map = NULL;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|s",
                             &string, &string_len,
                             &path, &path_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -169,11 +169,11 @@ PHP_FUNCTION(ms_newMapObjFromString)
   map = mapObj_newFromString(string, path);
 
   if (map == NULL) {
-    mapscript_throw_mapserver_exception("Error while loading map file from string." TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Error while loading map file from string.");
     return;
   }
 
-  mapscript_create_map(map, return_value TSRMLS_CC);
+  mapscript_create_map(map, return_value);
 }
 /* }}} */
 
@@ -189,7 +189,7 @@ PHP_FUNCTION(ms_newLayerObj)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O|O",
                             &zmap, mapscript_ce_map,
                             &zlayer, mapscript_ce_layer) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -202,7 +202,7 @@ PHP_FUNCTION(ms_newLayerObj)
     php_layer = MAPSCRIPT_OBJ_P(php_layer_object, zlayer);
 
   if ((layer = layerObj_new(php_map->map)) == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -215,7 +215,7 @@ PHP_FUNCTION(ms_newLayerObj)
   }
 
   MAPSCRIPT_MAKE_PARENT(zmap, NULL);
-  mapscript_create_layer(layer, parent, return_value TSRMLS_CC);
+  mapscript_create_layer(layer, parent, return_value);
 }
 /* }}} */
 
@@ -229,7 +229,7 @@ PHP_FUNCTION(ms_newProjectionObj)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &projString, &projString_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -237,12 +237,12 @@ PHP_FUNCTION(ms_newProjectionObj)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if ((projection = projectionObj_new(projString)) == NULL) {
-    mapscript_throw_mapserver_exception("Unable to construct projectionObj." TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Unable to construct projectionObj.");
     return;
   }
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_projection(projection, parent, return_value TSRMLS_CC);
+  mapscript_create_projection(projection, parent, return_value);
 }
 /* }}} */
 
@@ -263,7 +263,7 @@ PHP_FUNCTION(ms_newRectObj)
   php_rect = MAPSCRIPT_OBJ_P(php_rect_object, return_value);
 
   if ((php_rect->rect = rectObj_new()) == NULL) {
-    mapscript_throw_exception("Unable to construct rectObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct rectObj.");
     return;
   }
 }
@@ -284,7 +284,7 @@ PHP_FUNCTION(ms_newPointObj)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if ((point = pointObj_new()) == NULL) {
-    mapscript_throw_mapserver_exception("Unable to construct pointObj." TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Unable to construct pointObj.");
     return;
   }
 
@@ -297,7 +297,7 @@ PHP_FUNCTION(ms_newPointObj)
 
   /* Return point object */
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_point(point, parent, return_value TSRMLS_CC);
+  mapscript_create_point(point, parent, return_value);
 }
 
 /* {{{ proto lineObj ms_newLineObj()
@@ -317,7 +317,7 @@ PHP_FUNCTION(ms_newLineObj)
   php_line = MAPSCRIPT_OBJ_P(php_line_object, return_value);
 
   if ((php_line->line = lineObj_new()) == NULL) {
-    mapscript_throw_exception("Unable to construct lineObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct lineObj.");
     return;
   }
 }
@@ -334,7 +334,7 @@ PHP_FUNCTION(ms_newStyleObj)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O|O",
                             &zclass, mapscript_ce_class,
                             &zstyle, mapscript_ce_style) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -347,13 +347,13 @@ PHP_FUNCTION(ms_newStyleObj)
     php_style = MAPSCRIPT_OBJ_P(php_style_object, zstyle);
 
   if ((style = styleObj_new(php_class->class, (zstyle ? php_style->style : NULL))) == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
   /* Return point object */
   MAPSCRIPT_MAKE_PARENT(zclass, NULL);
-  mapscript_create_style(style, parent, return_value TSRMLS_CC);
+  mapscript_create_style(style, parent, return_value);
 }
 
 /* {{{ proto classObj ms_newClassObj(layerObj layer [, classObj class])
@@ -367,7 +367,7 @@ PHP_FUNCTION(ms_newClassObj)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O|O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O|O",
                             &zlayer, mapscript_ce_layer,
                             &zclass, mapscript_ce_class) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -381,12 +381,12 @@ PHP_FUNCTION(ms_newClassObj)
 
 
   if ((class = classObj_new(php_layer->layer, (zclass ? php_class->class:NULL))) == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
   MAPSCRIPT_MAKE_PARENT(zlayer, NULL);
-  mapscript_create_class(class, parent, return_value TSRMLS_CC);
+  mapscript_create_class(class, parent, return_value);
 }
 /* }}} */
 
@@ -401,7 +401,7 @@ PHP_FUNCTION(ms_newSymbolObj)
   php_map_object *php_map;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Os",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Os",
                             &zmap, mapscript_ce_map,
                             &symbolName, &symbolName_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -425,7 +425,7 @@ PHP_FUNCTION(ms_newShapeObj)
   long type;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &type) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -436,7 +436,7 @@ PHP_FUNCTION(ms_newShapeObj)
   php_shape = MAPSCRIPT_OBJ_P(php_shape_object, return_value);
 
   if ((php_shape->shape = shapeObj_new(type)) == NULL) {
-    mapscript_throw_exception("Unable to construct shapeObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct shapeObj.");
     return;
   }
 
@@ -454,7 +454,7 @@ PHP_FUNCTION(ms_shapeObjFromWkt)
   long str_len = 0;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &wkt, &str_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -465,7 +465,7 @@ PHP_FUNCTION(ms_shapeObjFromWkt)
   php_shape = MAPSCRIPT_OBJ_P(php_shape_object, return_value);
 
   if ((php_shape->shape = msShapeFromWKT(wkt)) == NULL) {
-    mapscript_throw_exception("Unable to construct shapeObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct shapeObj.");
     return;
   }
 
@@ -484,7 +484,7 @@ PHP_FUNCTION(ms_newShapeFileObj)
   shapefileObj *shapefile;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sl",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sl",
                             &filename, &filename_len, &type) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -493,11 +493,11 @@ PHP_FUNCTION(ms_newShapeFileObj)
 
   shapefile = shapefileObj_new(filename, type);
   if (shapefile == NULL) {
-    mapscript_throw_mapserver_exception("Failed to open shapefile %s" TSRMLS_CC, filename);
+    mapscript_throw_mapserver_exception("Failed to open shapefile %s", filename);
     return;
   }
 
-  mapscript_create_shapefile(shapefile, return_value TSRMLS_CC);
+  mapscript_create_shapefile(shapefile, return_value);
 }
 /* }}} */
 
@@ -513,12 +513,12 @@ PHP_FUNCTION(ms_newOWSRequestObj)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if ((request = cgirequestObj_new()) == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
   /* Return owsrequest object */
-  mapscript_create_owsrequest(request, return_value TSRMLS_CC);
+  mapscript_create_owsrequest(request, return_value);
 }
 
 /* {{{ proto gridObj ms_newGridObj(layerObj layer)
@@ -531,7 +531,7 @@ PHP_FUNCTION(ms_newGridObj)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zlayer, mapscript_ce_layer) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -554,7 +554,7 @@ PHP_FUNCTION(ms_newGridObj)
     php_grid = MAPSCRIPT_OBJ(php_grid_object, php_layer->grid);
     php_grid->parent.child_ptr = NULL;
 #if PHP_VERSION_ID < 70000
-    zend_objects_store_del_ref(php_layer->grid TSRMLS_CC);
+    zend_objects_store_del_ref(php_layer->grid);
 #else
 	MAPSCRIPT_DELREF(php_layer->grid);
 #endif
@@ -564,12 +564,12 @@ PHP_FUNCTION(ms_newGridObj)
 
   MAPSCRIPT_MAKE_PARENT(zlayer, &php_layer->grid);
 #if PHP_VERSION_ID < 70000
-  mapscript_create_grid((graticuleObj *)(php_layer->layer->grid), parent, php_layer->grid TSRMLS_CC);
-  zend_objects_store_add_ref(php_layer->grid TSRMLS_CC);
+  mapscript_create_grid((graticuleObj *)(php_layer->layer->grid), parent, php_layer->grid);
+  zend_objects_store_add_ref(php_layer->grid);
 
   *return_value = *(php_layer->grid);
 #else
-  mapscript_create_grid((graticuleObj *)(php_layer->layer->grid), parent, &php_layer->grid TSRMLS_CC);
+  mapscript_create_grid((graticuleObj *)(php_layer->layer->grid), parent, &php_layer->grid);
 
   ZVAL_COPY_VALUE(return_value, &php_layer->grid);
 #endif
@@ -590,12 +590,12 @@ PHP_FUNCTION(ms_GetErrorObj)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if ((error = msGetErrorObj()) == NULL) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
   /* Return error object */
-  mapscript_create_error(error, return_value TSRMLS_CC);
+  mapscript_create_error(error, return_value);
 }
 /* }}} */
 
@@ -729,7 +729,7 @@ PHP_FUNCTION(ms_ioGetStdoutBufferBytes)
   buf->data_len = 0;
   buf->data = NULL;
 
-  php_write(gdBuf.data, gdBuf.size TSRMLS_CC);
+  php_write(gdBuf.data, gdBuf.size);
 
   /* return the gdBuf.size, which is the "really used length" of the msIOBuffer */
   RETURN_LONG(gdBuf.size);
@@ -849,7 +849,7 @@ PHP_FUNCTION(ms_getScale)
   double dfScale = 0.0;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Ollld",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Ollld",
                             &zgeoRefExt, mapscript_ce_rect,
                             &width, &height, &unit, &resolution) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -860,7 +860,7 @@ PHP_FUNCTION(ms_getScale)
   php_geoRefExt = MAPSCRIPT_OBJ_P(php_rect_object, zgeoRefExt);
 
   if (msCalculateScale(*(php_geoRefExt->rect), unit, width, height, resolution, &dfScale) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -886,7 +886,7 @@ PHP_FUNCTION(ms_tokenizeMap)
 
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &filename, &filename_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -894,7 +894,7 @@ PHP_FUNCTION(ms_tokenizeMap)
   PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
 
   if ((tokens = msTokenizeMap(filename, &numtokens)) == NULL) {
-    mapscript_throw_mapserver_exception("Failed tokenizing map file %s" TSRMLS_CC,
+    mapscript_throw_mapserver_exception("Failed tokenizing map file %s",
                                         filename);
     return;
   } else {
@@ -992,7 +992,7 @@ PHP_MINIT_FUNCTION(mapscript)
 
   /* Init MapServer resources */
   if (msSetup() != MS_SUCCESS) {
-    mapscript_report_php_error(E_ERROR, "msSetup(): MapScript initialization failed." TSRMLS_CC);
+    mapscript_report_php_error(E_ERROR, "msSetup(): MapScript initialization failed.");
     return FAILURE;
   }
 

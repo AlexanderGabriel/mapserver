@@ -253,7 +253,7 @@ DLEXPORT int php_init_proj(INIT_FUNC_ARGS)
                               NULL);
 
   INIT_CLASS_ENTRY(tmp_class_entry, "proj", php_proj_class_functions);
-  proj_class_entry_ptr = zend_register_internal_class(&tmp_class_entry TSRMLS_CC);
+  proj_class_entry_ptr = zend_register_internal_class(&tmp_class_entry);
 
   return SUCCESS;
 }
@@ -276,7 +276,7 @@ DLEXPORT int php_end_proj(SHUTDOWN_FUNC_ARGS)
  *                       _php_proj_build_proj_object
  **********************************************************************/
 static long _php_proj_build_proj_object(PJ *pj,
-                                        HashTable *list, pval *return_value TSRMLS_DC)
+                                        HashTable *list, pval *return_value)
 {
   int pj_id;
 
@@ -286,7 +286,7 @@ static long _php_proj_build_proj_object(PJ *pj,
   pj_id = php3_list_insert(pj, PHPMS_GLOBAL(le_projobj));
 
   _phpms_object_init(return_value, pj_id, php_proj_class_functions,
-                     PHP4_CLASS_ENTRY(proj_class_entry_ptr) TSRMLS_CC);
+                     PHP4_CLASS_ENTRY(proj_class_entry_ptr));
 
   return pj_id;
 }
@@ -360,7 +360,7 @@ DLEXPORT void php_proj_pj_init(INTERNAL_FUNCTION_PARAMETERS)
 
   pj = pj_init(nParamCount, papszBuf);
 
-  _php_proj_build_proj_object(pj, list, return_value TSRMLS_CC);
+  _php_proj_build_proj_object(pj, list, return_value);
 }
 
 
@@ -411,7 +411,7 @@ DLEXPORT void php_proj_pj_fwd(INTERNAL_FUNCTION_PARAMETERS)
   convert_to_double(p2);
 
   popj = (PJ *)_phpms_fetch_handle(pj,
-                                   PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                   PHPMS_GLOBAL(le_projobj), list);
 
   if (popj) {
     pnt.u = p2->value.dval * DEG_TO_RAD;
@@ -475,7 +475,7 @@ DLEXPORT void php_proj_pj_inv(INTERNAL_FUNCTION_PARAMETERS)
   convert_to_double(p2);
 
   popj = (PJ *)_phpms_fetch_handle(pj,
-                                   PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                   PHPMS_GLOBAL(le_projobj), list);
 
   if (popj) {
     pnt.u = p1->value.dval;
@@ -532,10 +532,10 @@ DLEXPORT void php_proj_pj_transform(INTERNAL_FUNCTION_PARAMETERS)
   convert_to_double(p2);
 
   in = (PJ *)_phpms_fetch_handle(pjin,
-                                 PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                 PHPMS_GLOBAL(le_projobj), list);
 
   out = (PJ *)_phpms_fetch_handle(pjout,
-                                  PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                  PHPMS_GLOBAL(le_projobj), list);
 
   if (in && out) {
     pnt.u = p1->value.dval;
@@ -610,10 +610,10 @@ DLEXPORT void php_proj_pj_datum_transform(INTERNAL_FUNCTION_PARAMETERS)
   convert_to_double(p2);
 
   in = (PJ *)_phpms_fetch_handle(pjin,
-                                 PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                 PHPMS_GLOBAL(le_projobj), list);
 
   out = (PJ *)_phpms_fetch_handle(pjout,
-                                  PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                  PHPMS_GLOBAL(le_projobj), list);
 
   if (in && out) {
     pnt.u = p1->value.dval;
@@ -667,7 +667,7 @@ DLEXPORT void php_proj_pj_free(INTERNAL_FUNCTION_PARAMETERS)
   }
 
   popj = (PJ *)_phpms_fetch_handle(pj,
-                                   PHPMS_GLOBAL(le_projobj), list TSRMLS_CC);
+                                   PHPMS_GLOBAL(le_projobj), list);
 
   if (popj) {
     pj_free(popj);

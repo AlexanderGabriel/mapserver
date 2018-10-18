@@ -51,7 +51,7 @@ PHP_METHOD(projectionObj, __construct)
   php_projection_object *php_projection;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &projString, &projString_len) == FAILURE) {
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &projString, &projString_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
   }
@@ -60,7 +60,7 @@ PHP_METHOD(projectionObj, __construct)
   php_projection = MAPSCRIPT_OBJ_P(php_projection_object, getThis());
 
   if ((php_projection->projection = projectionObj_new(projString)) == NULL) {
-    mapscript_throw_mapserver_exception("Unable to construct projectionObj." TSRMLS_CC);
+    mapscript_throw_mapserver_exception("Unable to construct projectionObj.");
     return;
   }
 }
@@ -75,7 +75,7 @@ PHP_METHOD(projectionObj, setWKTProjection)
   php_projection_object *php_projection;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &wkt, &wkt_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -116,7 +116,7 @@ zend_function_entry projection_functions[] = {
 };
 
 
-void mapscript_create_projection(projectionObj *projection, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_projection(projectionObj *projection, parent_object parent, zval *return_value)
 {
   php_projection_object * php_projection;
   object_init_ex(return_value, mapscript_ce_projection);
@@ -132,13 +132,13 @@ void mapscript_create_projection(projectionObj *projection, parent_object parent
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_projection_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_projection_create_object(zend_class_entry *ce)
 {
   php_projection_object *php_projection;
 
   php_projection = ecalloc(1, sizeof(*php_projection) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_projection->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_projection->zobj, ce);
   object_properties_init(&php_projection->zobj, ce);
 
   php_projection->zobj.handlers = &mapscript_projection_object_handlers;
@@ -186,7 +186,7 @@ PHP_MINIT_FUNCTION(projection)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "projectionObj", projection_functions);
-  mapscript_ce_projection = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_projection = zend_register_internal_class(&ce);
 
   mapscript_ce_projection->create_object = mapscript_projection_create_object;
   mapscript_ce_projection->ce_flags |= ZEND_ACC_FINAL;
@@ -200,7 +200,7 @@ PHP_MINIT_FUNCTION(projection)
 }
 #else
 /* PHP5 */
-static void mapscript_projection_object_destroy(void *object TSRMLS_DC)
+static void mapscript_projection_object_destroy(void *object)
 {
   php_projection_object *php_projection = (php_projection_object *)object;
 
@@ -215,7 +215,7 @@ static void mapscript_projection_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_projection_object_new_ex(zend_class_entry *ce, php_projection_object **ptr TSRMLS_DC)
+static zend_object_value mapscript_projection_object_new_ex(zend_class_entry *ce, php_projection_object **ptr)
 {
   zend_object_value retval;
   php_projection_object *php_projection;
@@ -224,7 +224,7 @@ static zend_object_value mapscript_projection_object_new_ex(zend_class_entry *ce
 
   retval = mapscript_object_new_ex(&php_projection->std, ce,
                                    &mapscript_projection_object_destroy,
-                                   &mapscript_projection_object_handlers TSRMLS_CC);
+                                   &mapscript_projection_object_handlers);
 
   if (ptr)
     *ptr = php_projection;
@@ -235,20 +235,20 @@ static zend_object_value mapscript_projection_object_new_ex(zend_class_entry *ce
   return retval;
 }
 
-static zend_object_value mapscript_projection_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_projection_object_new(zend_class_entry *ce)
 {
-  return mapscript_projection_object_new_ex(ce, NULL TSRMLS_CC);
+  return mapscript_projection_object_new_ex(ce, NULL);
 }
 
-static zend_object_value mapscript_projection_object_clone(zval *zobj TSRMLS_DC)
+static zend_object_value mapscript_projection_object_clone(zval *zobj)
 {
   php_projection_object *php_projection_old, *php_projection_new;
   zend_object_value new_ov;
 
   php_projection_old = MAPSCRIPT_OBJ_P(php_projection_object, zobj);
 
-  new_ov = mapscript_projection_object_new_ex(mapscript_ce_projection, &php_projection_new TSRMLS_CC);
-  zend_objects_clone_members(&php_projection_new->std, new_ov, &php_projection_old->std, Z_OBJ_HANDLE_P(zobj) TSRMLS_CC);
+  new_ov = mapscript_projection_object_new_ex(mapscript_ce_projection, &php_projection_new);
+  zend_objects_clone_members(&php_projection_new->std, new_ov, &php_projection_old->std, Z_OBJ_HANDLE_P(zobj));
 
   php_projection_new->projection = projectionObj_clone(php_projection_old->projection);
 

@@ -53,7 +53,7 @@ ZEND_END_ARG_INFO()
    referenceMapObj CANNOT be instanciated, this will throw an exception on use */
 PHP_METHOD(referenceMapObj, __construct)
 {
-  mapscript_throw_exception("referenceMapObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("referenceMapObj cannot be constructed");
 }
 /* }}} */
 
@@ -65,7 +65,7 @@ PHP_METHOD(referenceMapObj, __get)
   php_referencemap_object *php_referencemap;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -87,7 +87,7 @@ PHP_METHOD(referenceMapObj, __get)
                     else IF_GET_OBJECT("color", mapscript_ce_color, php_referencemap->color, &php_referencemap->referencemap->color)
                       else IF_GET_OBJECT("outlinecolor", mapscript_ce_color, php_referencemap->outlinecolor, &php_referencemap->referencemap->outlinecolor)
                         else {
-                          mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                          mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                         }
 }
 
@@ -100,7 +100,7 @@ PHP_METHOD(referenceMapObj, __set)
   php_referencemap_object *php_referencemap;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -121,9 +121,9 @@ PHP_METHOD(referenceMapObj, __set)
                   else if ( (STRING_EQUAL("extent", property)) ||
                             (STRING_EQUAL("color", property)) ||
                             (STRING_EQUAL("outlinecolor", property))) {
-                    mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors." TSRMLS_CC, property);
+                    mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors.", property);
                   } else {
-                    mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                    mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                   }
 }
 
@@ -138,7 +138,7 @@ PHP_METHOD(referenceMapObj, updateFromString)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &snippet, &snippet_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -150,7 +150,7 @@ PHP_METHOD(referenceMapObj, updateFromString)
   status =  referenceMapObj_updateFromString(php_referencemap->referencemap, snippet);
 
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -219,7 +219,7 @@ zend_function_entry referencemap_functions[] = {
   }
 };
 
-void mapscript_create_referencemap(referenceMapObj *referencemap, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_referencemap(referenceMapObj *referencemap, parent_object parent, zval *return_value)
 {
   php_referencemap_object * php_referencemap;
   object_init_ex(return_value, mapscript_ce_referencemap);
@@ -232,13 +232,13 @@ void mapscript_create_referencemap(referenceMapObj *referencemap, parent_object 
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_referencemap_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_referencemap_create_object(zend_class_entry *ce)
 {
   php_referencemap_object *php_referencemap;
 
   php_referencemap = ecalloc(1, sizeof(*php_referencemap) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_referencemap->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_referencemap->zobj, ce);
   object_properties_init(&php_referencemap->zobj, ce);
 
   php_referencemap->zobj.handlers = &mapscript_referencemap_object_handlers;
@@ -272,7 +272,7 @@ PHP_MINIT_FUNCTION(referencemap)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "referenceMapObj", referencemap_functions);
-  mapscript_ce_referencemap = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_referencemap = zend_register_internal_class(&ce);
 
   mapscript_ce_referencemap->create_object = mapscript_referencemap_create_object;
   mapscript_ce_referencemap->ce_flags |= ZEND_ACC_FINAL;
@@ -285,7 +285,7 @@ PHP_MINIT_FUNCTION(referencemap)
 }
 #else
 /* PHP5 */
-static void mapscript_referencemap_object_destroy(void *object TSRMLS_DC)
+static void mapscript_referencemap_object_destroy(void *object)
 {
   php_referencemap_object *php_referencemap = (php_referencemap_object *)object;
 
@@ -301,7 +301,7 @@ static void mapscript_referencemap_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_referencemap_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_referencemap_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_referencemap_object *php_referencemap;
@@ -309,7 +309,7 @@ static zend_object_value mapscript_referencemap_object_new(zend_class_entry *ce 
   MAPSCRIPT_ALLOC_OBJECT(php_referencemap, php_referencemap_object);
 
   retval = mapscript_object_new(&php_referencemap->std, ce,
-                                &mapscript_referencemap_object_destroy TSRMLS_CC);
+                                &mapscript_referencemap_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_referencemap->parent);
   php_referencemap->extent = NULL;

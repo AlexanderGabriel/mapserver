@@ -162,7 +162,7 @@ PHP_METHOD(shapeObj, __construct)
   long type;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &type) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -172,7 +172,7 @@ PHP_METHOD(shapeObj, __construct)
   php_shape = MAPSCRIPT_OBJ_P(php_shape_object, zobj);
 
   if ((php_shape->shape = shapeObj_new(type)) == NULL) {
-    mapscript_throw_exception("Unable to construct shapeObj." TSRMLS_CC);
+    mapscript_throw_exception("Unable to construct shapeObj.");
     return;
   }
 
@@ -189,7 +189,7 @@ PHP_METHOD(shapeObj, __get)
   php_shape_object *php_shape;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -209,7 +209,7 @@ PHP_METHOD(shapeObj, __get)
                 else IF_GET_OBJECT("bounds", mapscript_ce_rect, php_shape->bounds, &php_shape->shape->bounds)
                   else IF_GET_OBJECT("values", NULL, php_shape->values, NULL)
                     else {
-                      mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                      mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                     }
 }
 
@@ -222,7 +222,7 @@ PHP_METHOD(shapeObj, __set)
   php_shape_object *php_shape;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -241,9 +241,9 @@ PHP_METHOD(shapeObj, __set)
                 (STRING_EQUAL("bounds", property)) ||
                 (STRING_EQUAL("values", property)) ||
                 (STRING_EQUAL("numvalues", property)) ) {
-        mapscript_throw_exception("Property '%s' is read-only and cannot be set." TSRMLS_CC, property);
+        mapscript_throw_exception("Property '%s' is read-only and cannot be set.", property);
       } else {
-        mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+        mapscript_throw_exception("Property '%s' does not exist in this object.", property);
       }
 }
 
@@ -258,7 +258,7 @@ PHP_METHOD(shapeObj, add)
   int retval = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zline, mapscript_ce_line) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -284,7 +284,7 @@ PHP_METHOD(shapeObj, line)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "l",
                             &index) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -295,12 +295,12 @@ PHP_METHOD(shapeObj, line)
 
 
   if (index < 0 || index >= php_shape->shape->numlines) {
-    mapscript_throw_exception("Line '%d' does not exist in this object." TSRMLS_CC, index);
+    mapscript_throw_exception("Line '%d' does not exist in this object.", index);
     return;
   }
 
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_line(&(php_shape->shape->line[index]), parent, return_value TSRMLS_CC);
+  mapscript_create_line(&(php_shape->shape->line[index]), parent, return_value);
 }
 /* }}} */
 
@@ -314,7 +314,7 @@ PHP_METHOD(shapeObj, contains)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zpoint, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -340,7 +340,7 @@ PHP_METHOD(shapeObj, intersects)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -368,7 +368,7 @@ PHP_METHOD(shapeObj, project)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OO",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OO",
                             &zobj_proj_in, mapscript_ce_projection,
                             &zobj_proj_out, mapscript_ce_projection) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -382,7 +382,7 @@ PHP_METHOD(shapeObj, project)
 
   status = shapeObj_project(php_shape->shape, php_proj_in->projection, php_proj_out->projection);
   if (status != MS_SUCCESS) {
-    mapscript_report_mapserver_error(E_WARNING TSRMLS_CC);
+    mapscript_report_mapserver_error(E_WARNING);
   }
 
   RETURN_LONG(status);
@@ -401,7 +401,7 @@ PHP_METHOD(shapeObj, getPointUsingMeasure)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "d",
                             &measure) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -415,7 +415,7 @@ PHP_METHOD(shapeObj, getPointUsingMeasure)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(zobj, NULL);
-  mapscript_create_point(point, parent, return_value TSRMLS_CC);
+  mapscript_create_point(point, parent, return_value);
 }
 /* }}} */
 
@@ -433,7 +433,7 @@ PHP_METHOD(shapeObj, getMeasureUsingPoint)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zpoint, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -448,7 +448,7 @@ PHP_METHOD(shapeObj, getMeasureUsingPoint)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_point(intersection, parent, return_value TSRMLS_CC);
+  mapscript_create_point(intersection, parent, return_value);
 }
 /* }}} */
 
@@ -465,7 +465,7 @@ PHP_METHOD(shapeObj, getValue)
   php_shape_object *php_shape;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "Os",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "Os",
                             &zlayer, mapscript_ce_layer,
                             &fieldName, &fieldName_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
@@ -499,7 +499,7 @@ PHP_METHOD(shapeObj, buffer)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "d",
                             &width) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -513,7 +513,7 @@ PHP_METHOD(shapeObj, buffer)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -541,7 +541,7 @@ PHP_METHOD(shapeObj, convexhull)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -569,7 +569,7 @@ PHP_METHOD(shapeObj, boundary)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -583,7 +583,7 @@ PHP_METHOD(shapeObj, containsShape)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -613,7 +613,7 @@ PHP_METHOD(shapeObj, union)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -629,7 +629,7 @@ PHP_METHOD(shapeObj, union)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -645,7 +645,7 @@ PHP_METHOD(shapeObj, intersection)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -661,7 +661,7 @@ PHP_METHOD(shapeObj, intersection)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -677,7 +677,7 @@ PHP_METHOD(shapeObj, difference)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -693,7 +693,7 @@ PHP_METHOD(shapeObj, difference)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -709,7 +709,7 @@ PHP_METHOD(shapeObj, symdifference)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -725,7 +725,7 @@ PHP_METHOD(shapeObj, symdifference)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -739,7 +739,7 @@ PHP_METHOD(shapeObj, overlaps)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -766,7 +766,7 @@ PHP_METHOD(shapeObj, within)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -794,7 +794,7 @@ PHP_METHOD(shapeObj, crosses)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -821,7 +821,7 @@ PHP_METHOD(shapeObj, touches)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -848,7 +848,7 @@ PHP_METHOD(shapeObj, equals)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -875,7 +875,7 @@ PHP_METHOD(shapeObj, disjoint)
   php_shape_object *php_shape, *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -916,7 +916,7 @@ PHP_METHOD(shapeObj, getCentroid)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_point(point, parent, return_value TSRMLS_CC);
+  mapscript_create_point(point, parent, return_value);
 }
 /* }}} */
 
@@ -990,7 +990,7 @@ PHP_METHOD(shapeObj, getLabelPoint)
     RETURN_FALSE;
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_point(point, parent, return_value TSRMLS_CC);
+  mapscript_create_point(point, parent, return_value);
 }
 /* }}} */
 
@@ -1058,7 +1058,7 @@ PHP_METHOD(shapeObj, simplify)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "d",
                             &tolerance) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1072,7 +1072,7 @@ PHP_METHOD(shapeObj, simplify)
     RETURN_NULL();
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -1088,7 +1088,7 @@ PHP_METHOD(shapeObj, topologyPreservingSimplify)
   parent_object parent;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "d",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "d",
                             &tolerance) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1102,7 +1102,7 @@ PHP_METHOD(shapeObj, topologyPreservingSimplify)
     RETURN_NULL();
 
   MAPSCRIPT_MAKE_PARENT(NULL, NULL);
-  mapscript_create_shape(shape, parent, NULL, return_value TSRMLS_CC);
+  mapscript_create_shape(shape, parent, NULL, return_value);
 }
 /* }}} */
 
@@ -1119,7 +1119,7 @@ PHP_METHOD(shapeObj, draw)
   php_image_object *php_image;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "OOO",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "OOO",
                             &zmap, mapscript_ce_map,
                             &zlayer, mapscript_ce_layer,
                             &zimage, mapscript_ce_image) == FAILURE) {
@@ -1135,7 +1135,7 @@ PHP_METHOD(shapeObj, draw)
 
   if ((status = shapeObj_draw(php_shape->shape, php_map->map, php_layer->layer,
                               php_image->image)) != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -1173,7 +1173,7 @@ PHP_METHOD(shapeObj, distanceToPoint)
   php_point_object *php_point;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zpoint, mapscript_ce_point) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1197,7 +1197,7 @@ PHP_METHOD(shapeObj, distanceToShape)
   php_shape_object *php_shape2;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "O",
                             &zshape, mapscript_ce_shape) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -1255,7 +1255,7 @@ zend_function_entry shape_functions[] = {
 };
 
 
-void mapscript_create_shape(shapeObj *shape, parent_object parent, php_layer_object *php_layer, zval *return_value TSRMLS_DC)
+void mapscript_create_shape(shapeObj *shape, parent_object parent, php_layer_object *php_layer, zval *return_value)
 {
   php_shape_object *php_shape;
 
@@ -1275,7 +1275,7 @@ void mapscript_create_shape(shapeObj *shape, parent_object parent, php_layer_obj
         mapscript_add_assoc_string(php_shape->values, php_layer->layer->items[i], php_shape->shape->values[i], 1);
       }
     } else {
-      mapscript_throw_exception("Assertion failed, Could not set shape values: %d, %d" TSRMLS_CC,
+      mapscript_throw_exception("Assertion failed, Could not set shape values: %d, %d",
                                 php_shape->shape->numvalues, php_layer->layer->numitems);
       return;
     }
@@ -1290,13 +1290,13 @@ void mapscript_create_shape(shapeObj *shape, parent_object parent, php_layer_obj
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_shape_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_shape_create_object(zend_class_entry *ce)
 {
   php_shape_object *php_shape;
 
   php_shape = ecalloc(1, sizeof(*php_shape) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_shape->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_shape->zobj, ce);
   object_properties_init(&php_shape->zobj, ce);
 
   php_shape->zobj.handlers = &mapscript_shape_object_handlers;
@@ -1332,7 +1332,7 @@ PHP_MINIT_FUNCTION(shape)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "shapeObj", shape_functions);
-  mapscript_ce_shape = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_shape = zend_register_internal_class(&ce);
 
   mapscript_ce_shape->create_object = mapscript_shape_create_object;
   mapscript_ce_shape->ce_flags |= ZEND_ACC_FINAL;
@@ -1345,7 +1345,7 @@ PHP_MINIT_FUNCTION(shape)
 }
 #else
 /* PHP5 */
-static void mapscript_shape_object_destroy(void *object TSRMLS_DC)
+static void mapscript_shape_object_destroy(void *object)
 {
   php_shape_object *php_shape = (php_shape_object *)object;
 
@@ -1362,7 +1362,7 @@ static void mapscript_shape_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_shape_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_shape_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_shape_object *php_shape;
@@ -1370,7 +1370,7 @@ static zend_object_value mapscript_shape_object_new(zend_class_entry *ce TSRMLS_
   MAPSCRIPT_ALLOC_OBJECT(php_shape, php_shape_object);
 
   retval = mapscript_object_new(&php_shape->std, ce,
-                                &mapscript_shape_object_destroy TSRMLS_CC);
+                                &mapscript_shape_object_destroy);
 
   php_shape->is_ref = 0;
   MAPSCRIPT_INIT_PARENT(php_shape->parent);

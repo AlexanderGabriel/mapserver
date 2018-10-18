@@ -53,7 +53,7 @@ ZEND_END_ARG_INFO()
    legendObj CANNOT be instanciated, this will throw an exception on use */
 PHP_METHOD(legendObj, __construct)
 {
-  mapscript_throw_exception("legendObj cannot be constructed" TSRMLS_CC);
+  mapscript_throw_exception("legendObj cannot be constructed");
 }
 /* }}} */
 
@@ -65,7 +65,7 @@ PHP_METHOD(legendObj, __get)
   php_legend_object *php_legend;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &property, &property_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -88,7 +88,7 @@ PHP_METHOD(legendObj, __get)
                       else IF_GET_OBJECT("label", mapscript_ce_label, php_legend->label, &php_legend->legend->label)
                         else IF_GET_OBJECT("imagecolor", mapscript_ce_color, php_legend->imagecolor, &php_legend->legend->imagecolor)
                           else {
-                            mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                            mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                           }
 }
 
@@ -101,7 +101,7 @@ PHP_METHOD(legendObj, __set)
   php_legend_object *php_legend;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "sz",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "sz",
                             &property, &property_len, &value) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -123,9 +123,9 @@ PHP_METHOD(legendObj, __set)
                     else if ( (STRING_EQUAL("outlinecolor", property)) ||
                               (STRING_EQUAL("imagecolor", property)) ||
                               (STRING_EQUAL("label", property))) {
-                      mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors." TSRMLS_CC, property);
+                      mapscript_throw_exception("Property '%s' is an object and can only be modified through its accessors.", property);
                     } else {
-                      mapscript_throw_exception("Property '%s' does not exist in this object." TSRMLS_CC, property);
+                      mapscript_throw_exception("Property '%s' does not exist in this object.", property);
                     }
 }
 
@@ -140,7 +140,7 @@ PHP_METHOD(legendObj, updateFromString)
   int status = MS_FAILURE;
 
   PHP_MAPSCRIPT_ERROR_HANDLING(TRUE);
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+  if (zend_parse_parameters(ZEND_NUM_ARGS(), "s",
                             &snippet, &snippet_len) == FAILURE) {
     PHP_MAPSCRIPT_RESTORE_ERRORS(TRUE);
     return;
@@ -152,7 +152,7 @@ PHP_METHOD(legendObj, updateFromString)
   status =  legendObj_updateFromString(php_legend->legend, snippet);
 
   if (status != MS_SUCCESS) {
-    mapscript_throw_mapserver_exception("" TSRMLS_CC);
+    mapscript_throw_mapserver_exception("");
     return;
   }
 
@@ -220,7 +220,7 @@ zend_function_entry legend_functions[] = {
   }
 };
 
-void mapscript_create_legend(legendObj *legend, parent_object parent, zval *return_value TSRMLS_DC)
+void mapscript_create_legend(legendObj *legend, parent_object parent, zval *return_value)
 {
   php_legend_object * php_legend;
   object_init_ex(return_value, mapscript_ce_legend);
@@ -234,13 +234,13 @@ void mapscript_create_legend(legendObj *legend, parent_object parent, zval *retu
 
 #if PHP_VERSION_ID >= 70000
 /* PHP7 - Modification by Bjoern Boldt <mapscript@pixaweb.net> */
-static zend_object *mapscript_legend_create_object(zend_class_entry *ce TSRMLS_DC)
+static zend_object *mapscript_legend_create_object(zend_class_entry *ce)
 {
   php_legend_object *php_legend;
 
   php_legend = ecalloc(1, sizeof(*php_legend) + zend_object_properties_size(ce));
 
-  zend_object_std_init(&php_legend->zobj, ce TSRMLS_CC);
+  zend_object_std_init(&php_legend->zobj, ce);
   object_properties_init(&php_legend->zobj, ce);
 
   php_legend->zobj.handlers = &mapscript_legend_object_handlers;
@@ -274,7 +274,7 @@ PHP_MINIT_FUNCTION(legend)
   zend_class_entry ce;
 
   INIT_CLASS_ENTRY(ce, "legendObj", legend_functions);
-  mapscript_ce_legend = zend_register_internal_class(&ce TSRMLS_CC);
+  mapscript_ce_legend = zend_register_internal_class(&ce);
 
   mapscript_ce_legend->create_object = mapscript_legend_create_object;
   mapscript_ce_legend->ce_flags |= ZEND_ACC_FINAL;
@@ -287,7 +287,7 @@ PHP_MINIT_FUNCTION(legend)
 }
 #else
 /* PHP5 */
-static void mapscript_legend_object_destroy(void *object TSRMLS_DC)
+static void mapscript_legend_object_destroy(void *object)
 {
   php_legend_object *php_legend = (php_legend_object *)object;
 
@@ -303,7 +303,7 @@ static void mapscript_legend_object_destroy(void *object TSRMLS_DC)
   efree(object);
 }
 
-static zend_object_value mapscript_legend_object_new(zend_class_entry *ce TSRMLS_DC)
+static zend_object_value mapscript_legend_object_new(zend_class_entry *ce)
 {
   zend_object_value retval;
   php_legend_object *php_legend;
@@ -311,7 +311,7 @@ static zend_object_value mapscript_legend_object_new(zend_class_entry *ce TSRMLS
   MAPSCRIPT_ALLOC_OBJECT(php_legend, php_legend_object);
 
   retval = mapscript_object_new(&php_legend->std, ce,
-                                &mapscript_legend_object_destroy TSRMLS_CC);
+                                &mapscript_legend_object_destroy);
 
   MAPSCRIPT_INIT_PARENT(php_legend->parent);
   php_legend->outlinecolor = NULL;
