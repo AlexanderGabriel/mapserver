@@ -40,9 +40,9 @@
 
 #if ZEND_MODULE_API_NO < 20010901
 #define TSRMLS_D  void
-#define
+#define TSRMLS_DC
 #define TSRMLS_C
-#define
+#define TSRMLS_CC
 #endif
 
 /* Add pseudo refcount macros for PHP version < 5.3 */
