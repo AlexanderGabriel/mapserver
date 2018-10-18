@@ -295,7 +295,7 @@ PHP_MINIT_FUNCTION(color)
 }
 #else
 /* PHP5 */
-static void mapscript_color_object_destroy(void *object)
+static void mapscript_color_object_destroy(void *object TSRMLS_DC)
 {
   php_color_object *php_color = (php_color_object *)object;
 
@@ -308,7 +308,7 @@ static void mapscript_color_object_destroy(void *object)
   efree(object);
 }
 
-static zend_object_value mapscript_color_object_new(zend_class_entry *ce)
+static zend_object_value mapscript_color_object_new(zend_class_entry *ce TSRMLS_DC)
 {
   zend_object_value retval;
   php_color_object *php_color;
@@ -316,7 +316,7 @@ static zend_object_value mapscript_color_object_new(zend_class_entry *ce)
   MAPSCRIPT_ALLOC_OBJECT(php_color, php_color_object);
 
   retval = mapscript_object_new(&php_color->std, ce,
-                                &mapscript_color_object_destroy);
+                                &mapscript_color_object_destroy TSRMLS_CC);
 
   MAPSCRIPT_INIT_PARENT(php_color->parent);
 
