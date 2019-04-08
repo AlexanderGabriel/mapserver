@@ -67,6 +67,7 @@ before_install:
   - tar xf swig-3.0.12.tar.gz
   - cd swig-3.0.12 && ./configure --prefix=/usr && make && sudo make install
   - swig -version
+  - cmake -version
   - cd ..
 
 script:
