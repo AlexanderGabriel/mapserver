@@ -78,7 +78,12 @@ before_install:
   - cd ..
 
 script:
-  - make cmakebuild
+  - mkdir build
+  - cd build
+  - cmake ..
+  - cmake -DWITH_PHPNG=1
+  - cmake --build .
+  - cd ..
   - make mspython-wheel  
   - make -j4 test
 
