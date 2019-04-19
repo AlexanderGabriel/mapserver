@@ -67,7 +67,7 @@ before_install:
   - cd CMake
   - ./configure
   - make
-  - make install
+  - sudo make install
   # install swig 3.0.12 (defaults to 2.0.11 on trusty)
   - sudo wget http://prdownloads.sourceforge.net/swig/swig-3.0.12.tar.gz
   - tar xf swig-3.0.12.tar.gz
