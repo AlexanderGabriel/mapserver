@@ -65,7 +65,6 @@ before_install:
   # build and install cmake
   - git clone https://github.com/Kitware/CMake
   - cd CMake
-  - ./buildconf
   - ./configure
   - make
   - make install
