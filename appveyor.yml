@@ -45,7 +45,7 @@ build_script:
   - set SDK_LIB=%BUILD_FOLDER%/sdk/%SDK%/lib
   - set SDK_BIN=%BUILD_FOLDER%/sdk/%SDK%/bin
   - appveyor DownloadFile https://sourceforge.net/projects/swig/files/swigwin/swigwin-4.0.0/swigwin-4.0.0.zip
-  - 7z x swigwin-4.0.0 > nul
+  - 7z x swigwin-4.0.0.zip > nul
   - set SWIG_EXECUTABLE=%BUILD_FOLDER%/sdk/swigwin-4.0.0/swig.exe
   - set REGEX_DIR=%BUILD_FOLDER%/sdk/regex-0.12
   - if "%platform%" == "x86" SET PYTHON_EXECUTABLE=c:/python27/python.exe
