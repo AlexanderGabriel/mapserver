@@ -62,9 +62,6 @@ if(WIN32)
   SWIG_LINK_LIBRARIES(php_mapscriptng ${PHP_LIBRARY})
 endif(WIN32)
 
-# hide "defined but not used" warnings
-target_compile_options(php_mapscriptng PRIVATE -Wno-unused-label)
-
 target_link_libraries(php_mapscriptng mapserver)
 set_target_properties(${SWIG_MODULE_mapscript_REAL_NAME} PROPERTIES PREFIX "")
 
